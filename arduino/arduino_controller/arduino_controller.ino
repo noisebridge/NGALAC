@@ -130,6 +130,7 @@ void setup() {
         pinMode(output_pins[pin], OUTPUT);
         digitalWrite(output_pins[pin], LOW);
     }
+    setup_leds();
 }
 
 void loop() {
