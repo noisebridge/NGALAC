@@ -4,6 +4,8 @@ import pudb
 
 COMMANDS = [['ping', ''],
             ['pong', 's'],
+            ['req_firmware', ''],
+            ['send_firmware', 'i*'],
             ['player', 'i'],
             ['lights', 's'],
             ['get_state', ''],
@@ -19,7 +21,12 @@ class ArduinoController():
         Use pseudo terminal to test, ie:
         https://stackoverflow.com/questions/52187/virtual-serial-port-for-linux
         miniterm.py to spy
+
+        soscat -d -d pty,raw,echo=0 pty,raw,echo=0
+        opens a tty connection with 2 ends.  Device on 1, io on other
     '''
+
+    __firmware_version__ = (0, 1, 0)
 
     def __init__(self,
                  serial_port="/dev/pts/2",
@@ -37,7 +44,12 @@ class ArduinoController():
             pass  # heh, logging pls thx
         self.cmd_seq_num += 1
 
-    def _recv_cmd(self, cmd):
+    def _parse_msg(self, msg):
+        cmd, value, self.exec_time = msg
+        return (cmd, value)
+
+    def _recv_cmd(self):
+        msg = None
         try:
             msg = self.c.receive()
         except EOFError:
@@ -45,14 +57,35 @@ class ArduinoController():
             pass
 
         if msg:
-            return _parse_msg(msg)
+            return self._parse_msg(msg)
         else:
             pass
 
-    def _parse_msg(self, msg):
-        # self.last_cmd, value, self.exec_time = msg
-        value = msg
-        return value
+    def get_firmware(self):
+        self.flush()
+        self._send_cmd('req_firmware')
+        cmd, board_firmware = self._recv_cmd()
+        if cmd == 'send_firmware':
+            return board_firmware
+        else:
+            # bad command handling
+            pass
+
+        self.flush()
+        return board_firmware
+
+    def check_firmware(self):
+
+        board_firmware = self.get_firmware()
+        return all(self.__firmware_version__[i] == board_firmware[i]
+                   for i in range(0, 3))
+
+    def flush(self):
+        while self._recv_cmd() is not None:
+            pass
+
+    def read(self):
+        return self._recv_cmd()
 
     def ping(self):
         return self._send_cmd('ping')

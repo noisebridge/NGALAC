@@ -16,6 +16,7 @@ import time
 async def main():
     g = arduino("/dev/ttyUSB1")
     g.release_latches()
+
     streaming = False
     obs_recording = False
     obs_streaming = False
@@ -24,9 +25,9 @@ async def main():
 
         while True:
             try:
-                g.clear()
+                g.flush()
                 g.get_state()
-                ret = g.rec()
+                ret = g.read()
 
                 if ret:
                     cmd, state = ret
