@@ -32,7 +32,7 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 #endif
 
 /* firmware version */
-const static int firmware_version[NUM_INPUT] = {0, 1, 0};
+const static int firmware_version[3] = {0, 1, 0};
 
 /* Define available CmdMessenger commands */
 enum {
@@ -170,6 +170,10 @@ void attach_callbacks(void) {
 void read_btns(void) {
     static uint8_t y_old[NUM_INPUT]={0,0,0};
     int state_change = 0;
+
+    for(pin=0; pin<NUM_INPUT; pin++) {
+        y_old[pin]=0;
+    }
 
     for(pin=0;pin<NUM_INPUT;pin++){
         y_old[pin] = y_old[pin] - (y_old[pin] >> 2);
