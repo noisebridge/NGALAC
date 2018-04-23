@@ -33,6 +33,7 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 
 /* firmware version */
 const static int firmware_version[3] = {0, 1, 0};
+unsigned long delays[1]={50};
 
 /* Define available CmdMessenger commands */
 enum {
@@ -66,6 +67,10 @@ enum ouptuts {
 
 enum analogs {
     read_webcam_angle
+};
+
+enum delays{
+    servo_delay
 };
 
 Servo webcam_angle;       // Servo to adjust webcam angle
@@ -168,7 +173,7 @@ void attach_callbacks(void) {
  * the debounce is handled in two stages, a simulated RC filter and a schmitt trigger.
  */
 void read_btns(void) {
-    static uint8_t y_old[NUM_INPUT]={0,0,0};
+    static uint8_t y_old[NUM_INPUT];
     int state_change = 0;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
@@ -205,8 +210,11 @@ void read_btns(void) {
 void adjust_webcam_angle() {
     int val;
     val = analogRead(analog_pins[read_webcam_angle]);
+    Serial.println(val, HEX);
     val = map(val, 0, 1023, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
     webcam_angle.write(val);
+
+    delays[servo_delay]=millis();
 }
 
 void setup() {
@@ -233,10 +241,16 @@ void setup() {
         pinMode(output_pins[pin], OUTPUT);
         digitalWrite(output_pins[pin], LOW);
     }
+
+    webcam_angle.attach(output_pins[set_webcam_angle]);
 }
 
 void loop() {
+
     c.feedinSerialData();
     read_btns();
+    if (millis() - delays[servo_delay]) {
+        adjust_webcam_angle();
+    }
 }
 
