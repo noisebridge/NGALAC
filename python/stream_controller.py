@@ -7,14 +7,17 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               StartStopRecordingRequest
                               )
 from obswsrc.types import Stream, StreamSettings
-from arduino_controller import NgalacArduinoController as arduino
+from arduino_controller import ArduinoController as arduino
 import time
+from util import get_serial_ports, find_board
 
 # need port detection to pass to arduino controller
 
 
 async def main():
-    g = arduino("/dev/ttyUSB1")
+    ports = find_board(get_serial_ports())
+    g = arduino(ports[0])
+
     g.release_latches()
 
     streaming = False
@@ -34,6 +37,7 @@ async def main():
                     print("{}: {}".format(cmd, state))
 
                     if state[11] == 1:
+                        await obsws.require(StartStopStreamingRequest())
                         await obsws.require(StartStopRecordingRequest())
                         g.release_latches()
 
