@@ -1,6 +1,5 @@
 from PyCmdMessenger import ArduinoBoard, CmdMessenger
 import obswsrc
-import pudb
 
 COMMANDS = [['ping', ''],
             ['pong', 's'],
