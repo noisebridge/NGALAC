@@ -34,11 +34,13 @@ def find_board(ports):
 
     for port in ports:
         try:
+            print('trying port: {}'.format(port))
             board = ArduinoController(serial_port=port)
             board.ping()
             ayt = board._recv_cmd()
             if not ayt:
-                raise ValueError('No board on port {}'.format(port))
+                print('No board on port {}'.format(port))
+                continue
 
             if ayt[1][0] == 'pong' and board.check_firmware():
                 board.close()
@@ -46,6 +48,5 @@ def find_board(ports):
 
         except BaseException as e:
             raise e
-            # bad.append((port, 'port open, but no response. firmware?'))
 
     return boards
