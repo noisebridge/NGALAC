@@ -1,9 +1,13 @@
 #include "CmdMessenger.h"
 
 /* Define available CmdMessenger commands */
+static int firmware_version[3] = {0, 1, 0};
+
 enum {
     ping,
     pong,
+    req_firmware,
+    send_firmware,
     player,
     lights,
     get_state,
@@ -33,6 +37,14 @@ CmdMessenger c = CmdMessenger(Serial,',',';','/');
 
 void do_pong(void){
     c.sendCmd(pong, "pong");
+}
+
+void do_send_firmware(void) {
+    c.sendCmdStart(send_firmware);
+    c.sendCmdBinArg(firmware_version[0]);  // major number
+    c.sendCmdBinArg(firmware_version[1]);
+    c.sendCmdBinArg(firmware_version[2]);
+    c.sendCmdEnd();
 }
 
 void send_state(void){
@@ -87,6 +99,7 @@ void unlatch_pins(){
 /* Attach callbacks for CmdMessenger commands */
 void attach_callbacks(void) {
     c.attach(ping, do_pong);
+    c.attach(req_firmware, do_send_firmware);
     c.attach(player, is_player);
     c.attach(lights, lights_handler);
     c.attach(get_state, send_state);
@@ -97,7 +110,6 @@ void attach_callbacks(void) {
 void read_btns(void) {
     static uint8_t y_old[3]={0,0,0};
     int state_change = 0;
-    uint8_t temp[3];
 
     for(pin=0;pin<3;pin++){
         y_old[pin] = y_old[pin] - (y_old[pin] >> 2);
