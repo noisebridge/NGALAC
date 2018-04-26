@@ -1,2 +1,5 @@
 COMport permissions to run the probe script to find ports
 
+sudo picocom -b 9600 /dev/ttyUSB0
+- this will steal the serial output from the board, but that's ok for testing purposes.
+
