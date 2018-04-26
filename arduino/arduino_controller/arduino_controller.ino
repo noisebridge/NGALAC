@@ -32,8 +32,7 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 #endif
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 0};
-unsigned long delays[1]={50};
+const static int firmware_version[3] = {0, 1, 1};
 
 /* Define available CmdMessenger commands */
 enum {
@@ -73,22 +72,25 @@ enum delays{
     servo_delay
 };
 
+/* Timers - may move to hw timers but currently unecessary */
+const unsigned long timers[1]={0};
+const unsigned long waits[1]={50};
+
 Servo webcam_angle;       // Servo to adjust webcam angle
 
 /* 
  * Button handling 
  * The buttons need debouncing, and values ma or may not need latchhing.  
- * FIXME: need to add a "NUM_INPUT_PIN" variable at some point., but need to do all that
- * when i get some further specs, so will wait.
  */
 uint8_t pin_latch_value[NUM_INPUT];
 uint8_t pin_latched[NUM_INPUT];
 uint8_t pin_active[NUM_INPUT];
 uint8_t pin_state[NUM_INPUT];
 
+/* Initial Light state */
 int light_state = LOW;
-int pin = 0;            // pin interation
 
+int pin = 0;            // pin interation
 
 /* Initialize CmdMessenger -- this should match PyCmdMessenger instance */
 const int BAUD_RATE = 9600;
@@ -96,10 +98,12 @@ CmdMessenger c = CmdMessenger(Serial,',',';','/');
 
 /* Create callback functions to deal with incoming messages */
 
+/* reply to ping with a pong */
 void do_pong(void){
     c.sendCmd(pong, "pong");
 }
 
+/* send firmware version */
 void do_send_firmware(void) {
     c.sendCmdStart(send_firmware);
     c.sendCmdBinArg(firmware_version[0]);  // major number
@@ -108,6 +112,16 @@ void do_send_firmware(void) {
     c.sendCmdEnd();
 }
 
+/* State is defined as the currently values of:
+ * {
+ *   debounced pins,
+ *   current pin values,
+ *   pin lateched state,
+ *   pin latched value
+ * }
+ * This lets the microcontroller do a standard send of information to the server, and the server can
+ * decide which information is interesting.  
+*/
 void send_state(void){
     c.sendCmdStart(ret_state);
     for(pin=0; pin<NUM_INPUT; pin++) {
@@ -125,10 +139,12 @@ void send_state(void){
     c.sendCmdEnd();
 }
 
+/* sends only value of pir input */
 void is_player(void){
     c.sendBinCmd(player, (int)pin_state[pir]);
 }
 
+/* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
 void lights_handler(void){
     int param1 = c.readBinArg<bool>();
     // int param2 = c.readBinArg<int>();
@@ -149,6 +165,10 @@ void on_unknown_command(void){
     c.sendCmd(error,"Command without callback.");
 }
 
+/* When the microcontroller ack's the state, it may (probably will) return a call to unlatch the pins to capture new
+ * button presses.  This will need to change as button behavior changes.  only "latchable" pins will be "unlatched."
+ * or more specifically longer presses for the servo motor cannot be handled via a latched momentary press.
+ */
 void unlatch_pins(){
     for(pin=0;pin<NUM_INPUT;pin++){
         pin_latched[pin]=0;
@@ -204,17 +224,16 @@ void read_btns(void) {
 
 /* 
  * Adjust servo height.  Input us an analog signal between ground and VCC+, constrained
- * by the values which make the camera visible.  If I get bored, I'll write a calibration routine.
- * easiest adjustor is a slider/knob/rocker potentiometer.
+ * by the values which make the camera visible.  Easiest adjustor is a slider/knob/rocker potentiometer, 
+ * hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
  */
 void adjust_webcam_angle() {
     int val;
     val = analogRead(analog_pins[read_webcam_angle]);
-    Serial.println(val, HEX);
     val = map(val, 0, 1023, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
     webcam_angle.write(val);
 
-    delays[servo_delay]=millis();
+    timers[servo_delay]=millis();
 }
 
 void setup() {
@@ -223,10 +242,10 @@ void setup() {
     attach_callbacks();
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        pin_latch_value[pin] = 0;
-        pin_latched[pin] = 0;
-        pin_active[pin] = 1;
-        pin_state[pin] = 1;
+        pin_latch_value[pin] = 0;   // Latched value set to 0, if not latched, this doesn't matter and is just an init
+        pin_latched[pin] = 0;       // initially, no pins are latched.
+        pin_active[pin] = 1;        // This is hard coded where it may be needed per pin in the future.
+        pin_state[pin] = 1;         // This is just an initial value, doesn't matter.
     }
 
     for(pin=0; pin<NUM_INPUT; pin++) {
@@ -249,7 +268,15 @@ void loop() {
 
     c.feedinSerialData();
     read_btns();
-    if (millis() - delays[servo_delay]) {
+
+    /* Right now the motor us using athe abs value of analog signal, so this is proper. however, the following
+     * changes will be needed.
+     * delay iff motor triggered last loop
+     * trigger motor iff button pressed
+     *  momentary -> move x positions
+     *  held -> move then roll back y positive to correct for overshoot from human reflexes.
+     */
+    if (millis() - timers[servo_delay] > waits[servo_delay]) {
         adjust_webcam_angle();
     }
 }
