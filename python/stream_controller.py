@@ -1,4 +1,7 @@
 import asyncio
+import time
+from enum import Enum
+from arduino_controller import ArduinoController as arduino
 from obswsrc import OBSWS
 from obswsrc.requests import (GetStreamingStatusRequest,
                               StartStreamingRequest,
@@ -7,51 +10,84 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               StartStopRecordingRequest
                               )
 from obswsrc.types import Stream, StreamSettings
-from arduino_controller import ArduinoController as arduino
-import time
 from util import get_serial_ports, find_board
 
-# need port detection to pass to arduino controller
+
+class board_status(Enum):
+    ''' Pin definitions to read state returned from board '''
+
+    # inputs
+    player_pin = 0
+    _unused0_pin = 1
+    stream_button_pin = 2
+
+    # outputs
+    stream_button_light = 3
+    set_webcam_angle = 4
+    _unused1 = 5
+
+    # latches
+    player_latched = 6
+    _unused0_latched = 7
+    stream_button_latched = 8
+
+    # latched values
+    player = 9
+    _uunsed0_ = 10
+    stream_button = 11
+
+    # misc
+    player_timeout = 13
 
 
 async def main():
     ports = find_board(get_serial_ports())
-    g = arduino(ports[0])
+    board = arduino(ports[0])
 
-    g.release_latches()
+    board.release_latches()
 
     streaming = False
     obs_recording = False
     obs_streaming = False
+    player = False
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
         while True:
             try:
-                g.flush()
-                g.get_state()
-                ret = g.read()
+                board.flush()
+                board.get_state()
+                ret = board.read()
 
                 if ret:
                     cmd, state = ret
-                    print("{}: {}".format(cmd, state))
 
-                    if state[11] == 1:
+                    if not player and state[board_status.player] == 1:
+                        player = True
+                        # exit standby, run help script or execute some fun
+                        # stuff
+
+                    if state[board_status.stream_button] == 1:
                         await obsws.require(StartStopStreamingRequest())
                         await obsws.require(StartStopRecordingRequest())
-                        g.release_latches()
 
                         obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
                         obs_streaming = obs_status['streaming']
                         obs_recording = obs_status['recording']
 
+                    if state[board_status.player_timeout] == 1:
+                        # go to stadby, script needs to be implemented
+                        pass
+
                 if streaming and not (obs_recording or obs_streaming):
                     streaming = False
-                    g.lights(0)
+                    board.lights(0)
 
                 elif not streaming and (obs_recording or obs_streaming):
                     streaming = True
-                    g.lights(1)
+                    board.lights(1)
+
+                board.release_latches()
 
             except ConnectionRefusedError:
                 print("sleeping a bit, yawn")

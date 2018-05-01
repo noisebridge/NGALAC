@@ -32,7 +32,11 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 #endif
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 1};
+const static int firmware_version[3] = {0, 1, 2};
+
+/* system status messaging to stream PC */
+#define STATUS_BITS 13
+int status[STATUS_BITS];
 
 /* Define available CmdMessenger commands */
 enum {
@@ -68,13 +72,15 @@ enum analogs {
     read_webcam_angle
 };
 
+#define NUM_DELAYS 2
 enum delays{
-    servo_delay
+    servo_delay,
+    player_activity
 };
 
 /* Timers - may move to hw timers but currently unecessary */
-const unsigned long timers[1]={0};
-const unsigned long waits[1]={50};
+const unsigned long timers[NUM_DELAYS]={0, 0};
+const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
 
 Servo webcam_angle;       // Servo to adjust webcam angle
 
@@ -124,18 +130,11 @@ void do_send_firmware(void) {
 */
 void send_state(void){
     c.sendCmdStart(ret_state);
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        c.sendCmdBinArg((int)pin_state[pin]);
+
+    for(pin=0; pin<STATUS_BITS; pin++) {
+        c.sendCmdBinArg(status[pin]);
     }
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        c.sendCmdBinArg((int)digitalRead(output_pins[pin]));
-    }
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        c.sendCmdBinArg((int)pin_latched[pin]);
-    }
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        c.sendCmdBinArg((int)pin_latch_value[pin]);
-    }
+
     c.sendCmdEnd();
 }
 
@@ -220,6 +219,7 @@ void read_btns(void) {
         }
         state_change=0;
     }
+
 }
 
 /* 
@@ -234,6 +234,56 @@ void adjust_webcam_angle() {
     webcam_angle.write(val);
 
     timers[servo_delay]=millis();
+}
+
+/* 
+ * Input handling.  Anything the arduino received gets processed here.
+ */
+void handle_input() {
+
+    int idx = 0;
+
+    for(pin=0; pin<NUM_INPUT; pin++) {
+        status[pin]=pin_state[pin];
+    }
+    idx += NUM_INPUT;
+
+    for(pin=0; pin<NUM_OUPUT; pin++) {
+        status[idx + pin]=digitalRead(output_pins[pin]);
+    }
+    idx += NUM_OUTPUT;
+
+    for(pin=0; pin<NUM_INPUT; pin++) {
+        status[pin + NUM_OUTPUT + NUM_INPUT]=pin_latched[pin];
+    }
+    idx += NUM_INPUT;    
+
+    for(pin=0; pin<NUM_INPUT; pin++) {
+        status[idx + pin]=latch_value[pin];
+    }
+    
+}
+
+/*
+ * Process wait based execution here
+ */
+void keep_time() {
+
+    /* Right now the motor us using athe abs value of analog signal, so this is proper. however, the following
+     * changes will be needed.
+     * delay iff motor triggered last loop
+     * trigger motor iff button pressed
+     *  momentary -> move x positions
+     *  held -> move then roll back y positive to correct for overshoot from human reflexes.
+     */
+    if (millis() - timers[servo_delay] > waits[servo_delay]) {
+        adjust_webcam_angle();
+    }
+
+    if (millis() - timers[player_activity]) > waits[player_activity] {
+        status[12] = 1;  // timeout indication ot stream PC
+        // need to send to rpi also, tbd till interface defined
+    }
 }
 
 void setup() {
@@ -268,16 +318,8 @@ void loop() {
 
     c.feedinSerialData();
     read_btns();
+    hangle_input();
+    keep_time();
 
-    /* Right now the motor us using athe abs value of analog signal, so this is proper. however, the following
-     * changes will be needed.
-     * delay iff motor triggered last loop
-     * trigger motor iff button pressed
-     *  momentary -> move x positions
-     *  held -> move then roll back y positive to correct for overshoot from human reflexes.
-     */
-    if (millis() - timers[servo_delay] > waits[servo_delay]) {
-        adjust_webcam_angle();
-    }
 }
 
