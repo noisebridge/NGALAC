@@ -19,6 +19,10 @@
 #define SERVO_MAX_ANGLE 75
 #define SERVO_MIN_ANGLE 30
 
+const int input_pins[NUM_INPUT] = {32, 34, 36};
+const int output_pins[NUM_OUTPUT] = {43, 45, 47};
+const int analog_pins[NUM_ANALOG] = {A0, A1, A2};
+
 #if defined(__AVR_ATmega328P__)
 const int input_pins[NUM_INPUT] = {5, 6, 7};
 const int output_pins[NUM_OUTPUT] = {2, 3, 4};
@@ -30,6 +34,7 @@ const int input_pins[NUM_INPUT] = {9, 10, 11};
 const int output_pins[NUM_OUTPUT] = {5, 6, 7};
 const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 #endif
+
 
 /* firmware version */
 const static int firmware_version[3] = {0, 1, 2};
@@ -79,7 +84,7 @@ enum delays{
 };
 
 /* Timers - may move to hw timers but currently unecessary */
-const unsigned long timers[NUM_DELAYS]={0, 0};
+unsigned long timers[NUM_DELAYS]={0, 0};
 const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
 
 Servo webcam_angle;       // Servo to adjust webcam angle
@@ -248,7 +253,7 @@ void handle_input() {
     }
     idx += NUM_INPUT;
 
-    for(pin=0; pin<NUM_OUPUT; pin++) {
+    for(pin=0; pin<NUM_OUTPUT; pin++) {
         status[idx + pin]=digitalRead(output_pins[pin]);
     }
     idx += NUM_OUTPUT;
@@ -259,7 +264,7 @@ void handle_input() {
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[idx + pin]=latch_value[pin];
+        status[idx + pin]=pin_latch_value[pin];
     }
     
 }
@@ -280,7 +285,7 @@ void keep_time() {
         adjust_webcam_angle();
     }
 
-    if (millis() - timers[player_activity]) > waits[player_activity] {
+    if ((millis() - timers[player_activity]) > waits[player_activity]) {
         status[12] = 1;  // timeout indication ot stream PC
         // need to send to rpi also, tbd till interface defined
     }
@@ -318,7 +323,7 @@ void loop() {
 
     c.feedinSerialData();
     read_btns();
-    hangle_input();
+    handle_input();
     keep_time();
 
 }
