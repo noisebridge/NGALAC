@@ -63,8 +63,8 @@ enum {
  */
 
 enum inputs {
-    pir,              // Infrared sensor
-    blank,
+    blank0,              // Infrared sensor
+    blank1,
     stream_button     // big green stream button
 };
 
@@ -74,7 +74,8 @@ enum ouptuts {
 };
 
 enum analogs {
-    read_webcam_angle
+    read_webcam_angle,
+    read_pir
 };
 
 #define NUM_DELAYS 2
@@ -85,7 +86,8 @@ enum delays{
 
 /* Timers - may move to hw timers but currently unecessary */
 unsigned long timers[NUM_DELAYS]={0, 0};
-const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
+//const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
+const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
 
 Servo webcam_angle;       // Servo to adjust webcam angle
 
@@ -147,7 +149,7 @@ void send_state(void){
 
 /* sends only value of pir input */
 void is_player(void){
-    c.sendBinCmd(player, (int)pin_state[pir]);
+    c.sendBinCmd(player, (int)pin_state[read_pir]);
 }
 
 /* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
@@ -225,6 +227,7 @@ void read_btns(void) {
             pin_latched[pin]=1;
         }
         state_change=0;
+
     }
 }
 
@@ -264,9 +267,9 @@ void handle_input() {
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[idx + pin]=pin_latch_value[pin];
+//        status[idx + pin]=pin_latch_value[pin];
     }
-    
+       
 }
 
 /*
@@ -285,11 +288,17 @@ void keep_time() {
       // timer reset in adjust_webcam_angle IF servo is moved
         adjust_webcam_angle();
     }
-
+    if(analogRead(analog_pins[read_pir]) > 500) {
+      status[12] = 1;
+      timers[player_activity] = millis();
+    }
+    
     if ((millis() - timers[player_activity]) > waits[player_activity]) {
-//        status[12] = 1;  // timeout indication ot stream PC
+        status[12] = 0;  // timeout indication ot stream PC
         // need to send to rpi also, tbd till interface defined
     }
+    status[11]=timers[player_activity];
+    status[9]=analogRead(analog_pins[read_pir]);
 }
 
 void setup() {
@@ -321,6 +330,7 @@ void setup() {
 
     webcam_angle.attach(output_pins[set_webcam_angle]);
     timers[servo_delay] = millis();
+    timers[player_activity] = millis();
 }
 void loop() {
 

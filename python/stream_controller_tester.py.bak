@@ -53,41 +53,39 @@ async def main():
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
-        obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
-        streaming = obs_status['streaming']
-        recording = obs_status['recording']
-
         while True:
             try:
-                obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
-                streaming = obs_status['streaming']
-                recording = obs_status['recording']
-
                 board.flush()
                 board.get_state()
                 ret = board.read()
 
                 if ret:
                     cmd, state = ret
-                    print(ret)
-                    if not player and state[board_status.player_timeout] == 1:
+
+                    if not player and state[board_status.player] == 1:
                         player = True
-                        # run gretting script on OBS
-                    elif player and state[board_status.player_timeout] == 0:
-                        player = False
                         # exit standby, run help script or execute some fun
                         # stuff
 
-                    if state[board_status.stream_button] == 1 and not streaming:
+                    if state[board_status.stream_button] == 1:
                         await obsws.require(StartStopStreamingRequest())
                         await obsws.require(StartStopRecordingRequest())
-                        board.lights(1)
 
-                    if state[board.stream_button] == 1 and streaming:
-                        
-                        await obsws.require(StartStopStreamingRequest())
-                        await obsws.require(StartStopRecordingRequest())
-                        board.lights(0)
+                        obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
+                        obs_streaming = obs_status['streaming']
+                        obs_recording = obs_status['recording']
+
+                    if state[board_status.player_timeout] == 1:
+                        # go to stadby, script needs to be implemented
+                        pass
+
+                if streaming and not (obs_recording or obs_streaming):
+                    streaming = False
+                    board.lights(0)
+
+                elif not streaming and (obs_recording or obs_streaming):
+                    streaming = True
+                    board.lights(1)
 
                 board.release_latches()
 
