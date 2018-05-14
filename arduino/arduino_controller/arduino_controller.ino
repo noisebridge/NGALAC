@@ -16,7 +16,7 @@
 #define NUM_OUTPUT 3
 #define NUM_ANALOG 3
 
-#define SERVO_MAX_ANGLE 75
+#define SERVO_MAX_ANGLE 145
 #define SERVO_MIN_ANGLE 30
 
 const int input_pins[NUM_INPUT] = {32, 34, 36};
@@ -235,8 +235,7 @@ void adjust_webcam_angle() {
     int val;
     val = analogRead(analog_pins[read_webcam_angle]);
     status[9]=val;
-//    val = map(val, 0, 255, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-    val = map(val, 0, 1024, 45, 135);
+    val = map(val, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
     status[11] = val;  
     webcam_angle.write(val);
     status[12] = val;  
