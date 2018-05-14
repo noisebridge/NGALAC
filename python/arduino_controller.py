@@ -25,7 +25,7 @@ class ArduinoController():
         opens a tty connection with 2 ends.  Device on 1, io on other
     '''
 
-    __firmware_version__ = (0, 1, 2)
+    __firmware_version__ = (0, 1, 3)
 
     def __init__(self,
                  serial_port="/dev/pts/2",

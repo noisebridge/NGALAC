@@ -37,7 +37,7 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 */
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 2};
+const static int firmware_version[3] = {0, 1, 3};
 
 /* system status messaging to stream PC */
 #define STATUS_BITS 13
@@ -161,9 +161,11 @@ void lights_handler(void){
         light_state = HIGH;
     }
 
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        digitalWrite(output_pins[pin], light_state);
-    }
+//    for(pin=0; pin<NUM_INPUT; pin++) {
+//        digitalWrite(output_pins[pin], light_state);
+//    }
+    // lights need to be indivually controlled, really.  better handler needed!
+    digitalWrite(output_pins[stream_button_light], light_state);
 }
 
 void on_unknown_command(void){
@@ -234,11 +236,8 @@ void read_btns(void) {
 void adjust_webcam_angle() {
     int val;
     val = analogRead(analog_pins[read_webcam_angle]);
-    status[9]=val;
     val = map(val, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-    status[11] = val;  
     webcam_angle.write(val);
-    status[12] = val;  
     timers[servo_delay]=millis();
 }
 
@@ -265,7 +264,7 @@ void handle_input() {
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-//        status[idx + pin]=pin_latch_value[pin];
+        status[idx + pin]=pin_latch_value[pin];
     }
     
 }
@@ -283,8 +282,8 @@ void keep_time() {
      *  held -> move then roll back y positive to correct for overshoot from human reflexes.
      */
     if (millis() - timers[servo_delay] > waits[servo_delay]) {
+      // timer reset in adjust_webcam_angle IF servo is moved
         adjust_webcam_angle();
-        // timers[servo_delay] = millis();
     }
 
     if ((millis() - timers[player_activity]) > waits[player_activity]) {
