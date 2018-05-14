@@ -13,7 +13,7 @@ from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
 
 
-class board_status(Enum):
+class board_status:
     ''' Pin definitions to read state returned from board '''
 
     # inputs
@@ -37,7 +37,7 @@ class board_status(Enum):
     stream_button = 11
 
     # misc
-    player_timeout = 13
+    player_timeout = 12
 
 
 async def main():

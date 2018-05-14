@@ -92,8 +92,8 @@ class ArduinoController():
     def is_player(self):
         return self._send_cmd('player')
 
-    def lights(self, on=True):
-        return self._send_cmd('lights', True)
+    def lights(self, on=1):
+        return self._send_cmd('lights', on)
 
     def get_state(self):
         return self._send_cmd('get_state')
