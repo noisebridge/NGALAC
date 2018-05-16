@@ -1,6 +1,4 @@
 
-static int stage = 0;
-
 void go_on_air_lights() {
   int i = 0;
   int red = 240;  
@@ -60,7 +58,7 @@ void go_on_air_lights() {
     stage++;
   }
 
-  if ((stage >= 9 && stage <= (9 + 64)) && (millis() - timers[2]) > 70) {
+  if ((stage >= 9 && stage <= 73) && (millis() - timers[2]) > 70) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, j * 3, 0);
     }
@@ -70,8 +68,9 @@ void go_on_air_lights() {
   }
 
   // set toggle off
-  if (stage > 71 ) {
+  if (stage > 73 ) {
     status[14] = 0;
+    stage = 0;
   }
   // this will leave the lights fully on
 }
@@ -151,6 +150,7 @@ void go_off_air_lights() {
   // set toggle off
   if(stage > 7) {
     status[14] = 0;
+    stage = 0;
   }
 }
 
@@ -168,11 +168,11 @@ void stream_button_on_air() {
     pulse_dir = 1;
   }
 
-  if (millis() - timers[1] > 50) {
+  if (millis() - timers[3] > 50) {
     pulse = analogRead(analog_pins[stream_button_light]);
     pulse += (pulse_dir * pulse_amt);
     analogWrite(analog_pins[stream_button_light], pulse);
-    timers[1] = millis();
+    timers[3] = millis();
   }
 
 }

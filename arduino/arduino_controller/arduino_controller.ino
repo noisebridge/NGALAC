@@ -6,6 +6,7 @@
 #define NUM_LEDS 130
 #define DATA_PIN 30
 CRGB leds[NUM_LEDS];
+volatile static int stage;
 
 #define SERVO_MAX_ANGLE 145
 #define SERVO_MIN_ANGLE 30
@@ -17,7 +18,7 @@ enum inputs {
     blank1,
     stream_button     // big green stream button
 };
-const int input_pins[NUM_INPUT] = {32, 34, 36};
+const int input_pins[NUM_INPUT] = {32, 34, 11};
 
 #define NUM_OUTPUT 3
 enum ouptuts {
@@ -25,7 +26,7 @@ enum ouptuts {
     set_webcam_angle,
     blank3
 };
-const int output_pins[NUM_OUTPUT] = {43, 45, 47};
+const int output_pins[NUM_OUTPUT] = {43, 13, 47};
 
 #define NUM_ANALOG 3
 enum analogs {
@@ -33,7 +34,7 @@ enum analogs {
     read_pir,
     stream_button_light,  // output to control the stream button light
 };
-const int analog_pins[NUM_ANALOG] = {A0, A1, A2};
+const int analog_pins[NUM_ANALOG] = {A1, A0, 12};
 
 /*
 #if defined(__AVR_ATmega328P__)
@@ -103,7 +104,7 @@ enum delays{
     air_status,
     stream_light
 };
-unsigned long timers[NUM_DELAYS]={0, 0, 0, 0};
+static unsigned long timers[NUM_DELAYS]={0, 0, 0, 0};
 const unsigned long waits[NUM_DELAYS]={50, 900000, 0, 0};  // 15m * 60s * 1000ms
 //const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
 
@@ -170,7 +171,7 @@ void is_player(void){
 }
 
 /* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
-void lights_handler(void){
+void handle_lights(void){
   
     if(status[13]==1) {
       // on air lights
@@ -209,7 +210,6 @@ void attach_callbacks(void) {
     c.attach(ping, do_pong);
     c.attach(req_firmware, do_send_firmware);
     c.attach(player, is_player);
-    c.attach(lights, lights_handler);
     c.attach(get_state, send_state);
     c.attach(on_unknown_command);
     c.attach(on_air, go_on_air);
@@ -218,11 +218,13 @@ void attach_callbacks(void) {
 }
 
 void go_on_air() {
+  stage = 0;
   status[13] = 1;
   status[14] = 1;  // trigger lights
 }
 
 void go_off_air() {
+  stage = 0;
   status[13] = 0;
   status[14] = 1;  // trigger lights
 }
@@ -292,8 +294,13 @@ void handle_input() {
     idx += NUM_OUTPUT;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[idx + pin]=pin_latched[pin];
+//        status[idx + pin]=pin_latched[pin];
     }
+    //test
+    status[6] = millis()-timers[2];
+    status[7] = timers[2];
+    status[8] = stage;
+    
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
@@ -327,7 +334,8 @@ void setup() {
     FastLED.addLeds<WS2812, DATA_PIN>(leds, NUM_LEDS); // GRB
 
     attach_callbacks();
-
+    stage = 0;
+    
     for(pin=0; pin<NUM_INPUT; pin++) {
         pin_latch_value[pin] = 0;   // Latched value set to 0, if not latched, this doesn't matter and is just an init
         pin_latched[pin] = 0;       // initially, no pins are latched.
@@ -360,7 +368,8 @@ void loop() {
     c.feedinSerialData();
     read_btns();
     handle_input();
+    handle_lights();
     keep_time();
-    FastLED.show();
+//    FastLED.show();
 }
 
