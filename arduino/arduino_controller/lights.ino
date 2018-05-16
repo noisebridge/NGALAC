@@ -1,24 +1,7 @@
-#define FASTLED_ALLOW_INTERRUPTS 0
-#include <FastLED.h>
-#define NUM_LEDS 130
-#define DATA_PIN 30
 
-
-CRGB leds[NUM_LEDS];
-// timers for lighting
-// 0 - on/off air
-// 1 - streaming button
-static unsigned long timers[2] = {0, 0};
 static int stage = 0;
 
-
-void setup() {
-  // put your setup code here, to run once:
-  FastLED.addLeds<WS2812, DATA_PIN>(leds, NUM_LEDS); // GRB
-}
-
-
-void on_air() {
+void go_on_air_lights() {
   int i = 0;
   int red = 240;  
   static int j = 0; 
@@ -28,67 +11,72 @@ void on_air() {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 1 && (millis() - timers[0]) > 200) {
+  if (stage == 1 && (millis() - timers[2]) > 200) {
 
     // on low for 10s
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 30, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 2 && (millis() - timers[0]) > 300) {
+  if (stage == 2 && (millis() - timers[2]) > 300) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 3 && (millis() - timers[0]) > 700) {
-    timers[0] = millis();
+  if (stage == 3 && (millis() - timers[2]) > 700) {
+    timers[2] = millis();
     stage++;
   }
 
-  if ((stage == 4 || stage == 6) && (millis() - timers[0]) > 100) {
+  if ((stage == 4 || stage == 6) && (millis() - timers[2]) > 100) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 50, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if ((stage == 5 || stage == 7) && (millis() - timers[0]) > 100) {
+  if ((stage == 5 || stage == 7) && (millis() - timers[2]) > 100) {
 
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 8  && (millis() - timers[0]) > 500) {
-    timers[0] = millis();
+  if (stage == 8  && (millis() - timers[2]) > 500) {
+    timers[2] = millis();
     stage++;
   }
 
-  if ((stage >= 9 && stage <= (9 + 64)) && (millis() - timers[0]) > 70) {
+  if ((stage >= 9 && stage <= (9 + 64)) && (millis() - timers[2]) > 70) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, j * 3, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
     j++;
+  }
+
+  // set toggle off
+  if (stage > 71 ) {
+    status[14] = 0;
   }
   // this will leave the lights fully on
 }
 
-void off_air() {
+void go_off_air_lights() {
   int i = 0;
   int red = 240;  
   static int j = 0; 
@@ -97,73 +85,76 @@ void off_air() {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 250, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
   
-  if (stage == 1 && (millis()-timers[0]) > 250) {
+  if (stage == 1 && (millis()-timers[2]) > 250) {
     // Off
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 2 && (millis() - timers[0]) > 75) {
+  if (stage == 2 && (millis() - timers[2]) > 75) {
 
     // on low for 10s
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 180, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 3 && (millis() - timers[0]) > 75) {
+  if (stage == 3 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 4 && (millis() - timers[0]) > 75) {
+  if (stage == 4 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 210, 0);
     }    
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
   
-  if (stage == 5 && (millis() - timers[0]) > 350) {
+  if (stage == 5 && (millis() - timers[2]) > 350) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }    
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
 
-  if (stage == 6 && (millis() - timers[0]) > 75) {
+  if (stage == 6 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 255, 0);
     }    
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
   }
   
-  if (stage == 7 && (millis() - timers[0]) > 75) {
+  if (stage == 7 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB(0, 0, 0);
     }    
-    timers[0] = millis();
+    timers[2] = millis();
     stage++;
-  }
-  // leave then off
+  } // leave then off
 
+  // set toggle off
+  if(stage > 7) {
+    status[14] = 0;
+  }
 }
 
-void stream_light_on_air() {
+void stream_button_on_air() {
   
   static int pulse_dir;
   static int pulse_amt = 5;
@@ -178,16 +169,16 @@ void stream_light_on_air() {
   }
 
   if (millis() - timers[1] > 50) {
-    pulse = analogRead(analog_pins[stream_button_light)
-    pulse += (pulse_dir * pulse_amt)
+    pulse = analogRead(analog_pins[stream_button_light]);
+    pulse += (pulse_dir * pulse_amt);
     analogWrite(analog_pins[stream_button_light], pulse);
     timers[1] = millis();
   }
 
 }
 
-void stream_light_off_air() {
-  int val = analogRead(analog_pins[stream_button_light])
+void stream_button_off_air() {
+  int val = analogRead(analog_pins[stream_button_light]);
 
   if(val > 300) {
     val = 0;
@@ -195,9 +186,9 @@ void stream_light_off_air() {
     val = 255;
   }
   
-  if (timers[1] > 330) {
+  if (timers[3] > 330) {
     analogWrite(analog_pins[stream_button_light], val);
-    timers[1] = millis();
+    timers[3] = millis();
   }
 
 }

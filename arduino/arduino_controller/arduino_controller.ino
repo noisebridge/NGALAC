@@ -1,27 +1,40 @@
 #include "CmdMessenger.h"
 #include "Servo.h"
+#include <FastLED.h>
 
-
-/*
- * Define which pins will be input / output depending on what board is used. 
- * Mostly needed right now to programand test on a Nano and install on the Leonardo
- *
- * The array of pins should be static, these determine the physical hookups.
- * The input and output enumbs, defined below, will always pull from the same array
- * position.  This is why the array values must stay the same, they just pass through the 
- * connection to the physical board.
- */
-
-#define NUM_INPUT 3
-#define NUM_OUTPUT 3
-#define NUM_ANALOG 3
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define NUM_LEDS 130
+#define DATA_PIN 30
+CRGB leds[NUM_LEDS];
 
 #define SERVO_MAX_ANGLE 145
 #define SERVO_MIN_ANGLE 30
+Servo webcam_angle;       // Servo to adjust webcam angle
 
+#define NUM_INPUT 3
+enum inputs {
+    blank0,              // Infrared sensor
+    blank1,
+    stream_button     // big green stream button
+};
 const int input_pins[NUM_INPUT] = {32, 34, 36};
+
+#define NUM_OUTPUT 3
+enum ouptuts {
+    blank2,
+    set_webcam_angle,
+    blank3
+};
 const int output_pins[NUM_OUTPUT] = {43, 45, 47};
+
+#define NUM_ANALOG 3
+enum analogs {
+    read_webcam_angle,
+    read_pir,
+    stream_button_light,  // output to control the stream button light
+};
 const int analog_pins[NUM_ANALOG] = {A0, A1, A2};
+
 /*
 #if defined(__AVR_ATmega328P__)
 const int input_pins[NUM_INPUT] = {5, 6, 7};
@@ -40,8 +53,31 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 const static int firmware_version[3] = {0, 1, 3};
 
 /* system status messaging to stream PC */
-#define STATUS_BITS 13
+#define STATUS_BITS 15
 int status[STATUS_BITS];
+
+/* 0 digital input 0
+ * 1 digital input 1
+ * 2 digital input 2
+ * 
+ * 3 digital output 0
+ * 4 digital output 1
+ * 5 digital output 2
+ * 
+ * 6 digital input pin latched 0
+ * 7 digital input pin latched 1
+ * 8 digital input pin latched 2
+ * 
+ *  9 digital input pin value 0
+ * 10 digital input pin value 1
+ * 11 digital input pin value 2
+ * 
+ * 12 digital input pin player 
+ * 13 digital input pin stream status
+ * 14 digital input pin stream toggle
+ * 
+ */
+
 
 /* Define available CmdMessenger commands */
 enum {
@@ -54,42 +90,23 @@ enum {
     get_state,
     ret_state,
     release_latches,
+    on_air,
+    off_air,
     error
 };
 
-/*
- * The inputs and outputs enumos define which buttons are attached to which physical pins as defined
- * int the input_pins and output_pins arrays above.
- */
-
-enum inputs {
-    blank0,              // Infrared sensor
-    blank1,
-    stream_button     // big green stream button
-};
-
-enum ouptuts {
-    stream_button_light,  // output to control the stream button light
-    set_webcam_angle
-};
-
-enum analogs {
-    read_webcam_angle,
-    read_pir
-};
-
-#define NUM_DELAYS 2
+/* Timers - may move to hw timers but currently unecessary */
+#define NUM_DELAYS 4
 enum delays{
     servo_delay,
-    player_activity
+    player_activity,
+    air_status,
+    stream_light
 };
+unsigned long timers[NUM_DELAYS]={0, 0, 0, 0};
+const unsigned long waits[NUM_DELAYS]={50, 900000, 0, 0};  // 15m * 60s * 1000ms
+//const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
 
-/* Timers - may move to hw timers but currently unecessary */
-unsigned long timers[NUM_DELAYS]={0, 0};
-//const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
-const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
-
-Servo webcam_angle;       // Servo to adjust webcam angle
 
 /* 
  * Button handling 
@@ -154,20 +171,22 @@ void is_player(void){
 
 /* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
 void lights_handler(void){
-    int param1 = c.readBinArg<int>();
-
-    param1 &= 0x01;  // architecture safe!  10 hours of work later...
-    if(param1 == 0) {
-        light_state = LOW;
+  
+    if(status[13]==1) {
+      // on air lights
+      if(status[14] == 1) {
+        go_on_air_lights();
+      }
+      // button light
+      stream_button_on_air();
     } else {
-        light_state = HIGH;
+      // off air lights
+      if(status[14] == 1) {
+        go_off_air_lights();
+      }
+      // button light
+      stream_button_off_air();
     }
-
-//    for(pin=0; pin<NUM_INPUT; pin++) {
-//        digitalWrite(output_pins[pin], light_state);
-//    }
-    // lights need to be indivually controlled, really.  better handler needed!
-    digitalWrite(output_pins[stream_button_light], light_state);
 }
 
 void on_unknown_command(void){
@@ -193,7 +212,19 @@ void attach_callbacks(void) {
     c.attach(lights, lights_handler);
     c.attach(get_state, send_state);
     c.attach(on_unknown_command);
+    c.attach(on_air, go_on_air);
+    c.attach(off_air, go_off_air);
     c.attach(release_latches, unlatch_pins);
+}
+
+void go_on_air() {
+  status[13] = 1;
+  status[14] = 1;  // trigger lights
+}
+
+void go_off_air() {
+  status[13] = 0;
+  status[14] = 1;  // trigger lights
 }
 
 /*
@@ -227,7 +258,6 @@ void read_btns(void) {
             pin_latched[pin]=1;
         }
         state_change=0;
-
     }
 }
 
@@ -269,7 +299,6 @@ void handle_input() {
     for(pin=0; pin<NUM_INPUT; pin++) {
         status[idx + pin]=pin_latch_value[pin];
     }
-       
 }
 
 /*
@@ -277,19 +306,13 @@ void handle_input() {
  */
 void keep_time() {
 
-    /* Right now the motor us using athe abs value of analog signal, so this is proper. however, the following
-     * changes will be needed.
-     * delay iff motor triggered last loop
-     * trigger motor iff button pressed
-     *  momentary -> move x positions
-     *  held -> move then roll back y positive to correct for overshoot from human reflexes.
-     */
     if (millis() - timers[servo_delay] > waits[servo_delay]) {
       // timer reset in adjust_webcam_angle IF servo is moved
         adjust_webcam_angle();
     }
+    
     if(analogRead(analog_pins[read_pir]) > 500) {
-      status[12] = 1;
+      status[12] = 1; // indicate a player is at the machine
       timers[player_activity] = millis();
     }
     
@@ -301,6 +324,7 @@ void keep_time() {
 
 void setup() {
     Serial.begin(BAUD_RATE);
+    FastLED.addLeds<WS2812, DATA_PIN>(leds, NUM_LEDS); // GRB
 
     attach_callbacks();
 
@@ -330,12 +354,13 @@ void setup() {
     timers[servo_delay] = millis();
     timers[player_activity] = millis();
 }
+
 void loop() {
 
     c.feedinSerialData();
     read_btns();
     handle_input();
     keep_time();
-
+    FastLED.show();
 }
 

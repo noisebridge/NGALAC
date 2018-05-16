@@ -10,6 +10,8 @@ COMMANDS = [['ping', ''],
             ['get_state', ''],
             ['ret_state', 'i*'],
             ['release_latches', 's'],
+            ['on_air', '']]
+            ['off_air', '']]
             ['error', '']]
 
 
@@ -91,6 +93,12 @@ class ArduinoController():
 
     def is_player(self):
         return self._send_cmd('player')
+
+    def on_air(self):
+        return self._send_cnd("on_air")
+
+    def off_air(self):
+        return self._send_cmd("off_air")
 
     def lights(self, on=1):
         return self._send_cmd('lights', on)
