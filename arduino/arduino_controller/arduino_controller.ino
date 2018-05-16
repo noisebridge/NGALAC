@@ -267,7 +267,7 @@ void handle_input() {
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-//        status[idx + pin]=pin_latch_value[pin];
+        status[idx + pin]=pin_latch_value[pin];
     }
        
 }
@@ -297,8 +297,6 @@ void keep_time() {
         status[12] = 0;  // timeout indication ot stream PC
         // need to send to rpi also, tbd till interface defined
     }
-    status[11]=timers[player_activity];
-    status[9]=analogRead(analog_pins[read_pir]);
 }
 
 void setup() {
