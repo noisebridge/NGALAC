@@ -4,7 +4,7 @@
 
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define NUM_LEDS 130
-#define DATA_PIN 30
+#define DATA_PIN 47
 CRGB leds[NUM_LEDS];
 volatile static int stage;
 
@@ -297,8 +297,6 @@ void handle_input() {
 //        status[idx + pin]=pin_latched[pin];
     }
     //test
-    status[6] = millis()-timers[2];
-    status[7] = timers[2];
     status[8] = stage;
     
     idx += NUM_INPUT;    

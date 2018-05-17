@@ -158,7 +158,7 @@ void stream_button_on_air() {
   
   static int pulse_dir;
   static int pulse_amt = 5;
-  static int pulse;
+  static int pulse = 0;
     
   if (pulse_amt >= 250) {
     pulse_dir = -1;
@@ -169,7 +169,8 @@ void stream_button_on_air() {
   }
 
   if (millis() - timers[3] > 50) {
-    pulse = analogRead(analog_pins[stream_button_light]);
+    status[6] = timers[3];
+    status[7] = pulse;
     pulse += (pulse_dir * pulse_amt);
     analogWrite(analog_pins[stream_button_light], pulse);
     timers[3] = millis();
