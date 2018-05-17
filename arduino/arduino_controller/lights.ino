@@ -7,7 +7,7 @@ void go_on_air_lights() {
   if (stage == 0) {
     // Off
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
     stage++;
@@ -17,7 +17,7 @@ void go_on_air_lights() {
 
     // on low for 10s
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 30, 0);
+      onair_leds[i] = CRGB(0, 30, 0);
     }
     timers[2] = millis();
     stage++;
@@ -25,7 +25,7 @@ void go_on_air_lights() {
 
   if (stage == 2 && (millis() - timers[2]) > 300) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
     stage++;
@@ -38,7 +38,7 @@ void go_on_air_lights() {
 
   if ((stage == 4 || stage == 6) && (millis() - timers[2]) > 100) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 50, 0);
+      onair_leds[i] = CRGB(0, 50, 0);
     }
     timers[2] = millis();
     stage++;
@@ -47,7 +47,7 @@ void go_on_air_lights() {
   if ((stage == 5 || stage == 7) && (millis() - timers[2]) > 100) {
 
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
     stage++;
@@ -60,7 +60,7 @@ void go_on_air_lights() {
 
   if ((stage >= 9 && stage <= 73) && (millis() - timers[2]) > 70) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, j * 3, 0);
+      onair_leds[i] = CRGB(0, j * 3, 0);
     }
     timers[2] = millis();
     stage++;
@@ -82,7 +82,7 @@ void go_off_air_lights() {
   
   if (stage == 0) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 250, 0);
+      onair_leds[i] = CRGB(0, 250, 0);
     }
     timers[2] = millis();
     stage++;
@@ -91,7 +91,7 @@ void go_off_air_lights() {
   if (stage == 1 && (millis()-timers[2]) > 250) {
     // Off
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
     stage++;
@@ -101,7 +101,7 @@ void go_off_air_lights() {
 
     // on low for 10s
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 180, 0);
+      onair_leds[i] = CRGB(0, 180, 0);
     }
     timers[2] = millis();
     stage++;
@@ -109,7 +109,7 @@ void go_off_air_lights() {
 
   if (stage == 3 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
     stage++;
@@ -117,7 +117,7 @@ void go_off_air_lights() {
 
   if (stage == 4 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 210, 0);
+      onair_leds[i] = CRGB(0, 210, 0);
     }    
     timers[2] = millis();
     stage++;
@@ -125,7 +125,7 @@ void go_off_air_lights() {
   
   if (stage == 5 && (millis() - timers[2]) > 350) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }    
     timers[2] = millis();
     stage++;
@@ -133,7 +133,7 @@ void go_off_air_lights() {
 
   if (stage == 6 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 255, 0);
+      onair_leds[i] = CRGB(0, 255, 0);
     }    
     timers[2] = millis();
     stage++;
@@ -141,7 +141,7 @@ void go_off_air_lights() {
   
   if (stage == 7 && (millis() - timers[2]) > 75) {
     for (i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB(0, 0, 0);
+      onair_leds[i] = CRGB(0, 0, 0);
     }    
     timers[2] = millis();
     stage++;
@@ -160,16 +160,15 @@ void stream_button_on_air() {
   static int pulse_amt = 5;
   static int pulse = 0;
     
-  if (pulse_amt >= 250) {
+  if (pulse >= 250) {
     pulse_dir = -1;
   }
 
-  if (pulse_amt <= 10) {
+  if (pulse <= 10) {
     pulse_dir = 1;
   }
 
   if (millis() - timers[3] > 50) {
-    status[6] = timers[3];
     status[7] = pulse;
     pulse += (pulse_dir * pulse_amt);
     analogWrite(analog_pins[stream_button_light], pulse);
@@ -179,15 +178,15 @@ void stream_button_on_air() {
 }
 
 void stream_button_off_air() {
-  int val = analogRead(analog_pins[stream_button_light]);
+  static int val = 255;
 
-  if(val > 300) {
+  if(val >= 255) {
     val = 0;
   } else {
     val = 255;
   }
   
-  if (timers[3] > 330) {
+  if ((millis() - timers[3]) > 500) {
     analogWrite(analog_pins[stream_button_light], val);
     timers[3] = millis();
   }

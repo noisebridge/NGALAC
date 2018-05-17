@@ -4,12 +4,14 @@
 
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define NUM_LEDS 130
-#define DATA_PIN 47
-CRGB leds[NUM_LEDS];
+#define DATA_PIN 37
+CRGB onair_leds[NUM_LEDS];
+CRGB ngalac_leds[NUM_LEDS];
+
 volatile static int stage;
 
-#define SERVO_MAX_ANGLE 145
-#define SERVO_MIN_ANGLE 30
+#define SERVO_MAX_ANGLE 110
+#define SERVO_MIN_ANGLE 75
 Servo webcam_angle;       // Servo to adjust webcam angle
 
 #define NUM_INPUT 3
@@ -34,7 +36,7 @@ enum analogs {
     read_pir,
     stream_button_light,  // output to control the stream button light
 };
-const int analog_pins[NUM_ANALOG] = {A1, A0, 12};
+const int analog_pins[NUM_ANALOG] = {A0, A1, 12};
 
 /*
 #if defined(__AVR_ATmega328P__)
@@ -269,11 +271,25 @@ void read_btns(void) {
  * hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
  */
 void adjust_webcam_angle() {
-    int val;
-    val = analogRead(analog_pins[read_webcam_angle]);
-    val = map(val, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-    webcam_angle.write(val);
-    timers[servo_delay]=millis();
+    int knob;
+    int current_angle = webcam_angle.read();
+    static int running = 0;
+    
+    knob = analogRead(analog_pins[read_webcam_angle]);
+    status[8]=knob;
+    knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
+    status[9]=knob;
+    if(abs(knob - current_angle) > 2) {
+      webcam_angle.attach(output_pins[set_webcam_angle]);
+      webcam_angle.write(knob);
+      timers[servo_delay]=millis();
+      running = 1;
+    }
+    
+    if (running == 1 && (millis() - timers[servo_delay] > 50)) {
+      webcam_angle.detach();
+      running = 0;
+    }
 }
 
 /* 
@@ -296,8 +312,6 @@ void handle_input() {
     for(pin=0; pin<NUM_INPUT; pin++) {
 //        status[idx + pin]=pin_latched[pin];
     }
-    //test
-    status[8] = stage;
     
     idx += NUM_INPUT;    
 
@@ -329,7 +343,7 @@ void keep_time() {
 
 void setup() {
     Serial.begin(BAUD_RATE);
-    FastLED.addLeds<WS2812, DATA_PIN>(leds, NUM_LEDS); // GRB
+    FastLED.addLeds<WS2812, DATA_PIN>(onair_leds, NUM_LEDS); // GRB
 
     attach_callbacks();
     stage = 0;
@@ -368,6 +382,6 @@ void loop() {
     handle_input();
     handle_lights();
     keep_time();
-//    FastLED.show();
+    FastLED.show();
 }
 
