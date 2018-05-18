@@ -6,7 +6,7 @@ void go_on_air_lights() {
 
   if (stage == 0) {
     // Off
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
@@ -16,7 +16,7 @@ void go_on_air_lights() {
   if (stage == 1 && (millis() - timers[2]) > 200) {
 
     // on low for 10s
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 30, 0);
     }
     timers[2] = millis();
@@ -24,7 +24,7 @@ void go_on_air_lights() {
   }
 
   if (stage == 2 && (millis() - timers[2]) > 300) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
@@ -37,7 +37,7 @@ void go_on_air_lights() {
   }
 
   if ((stage == 4 || stage == 6) && (millis() - timers[2]) > 100) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 50, 0);
     }
     timers[2] = millis();
@@ -46,7 +46,7 @@ void go_on_air_lights() {
 
   if ((stage == 5 || stage == 7) && (millis() - timers[2]) > 100) {
 
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
@@ -59,7 +59,7 @@ void go_on_air_lights() {
   }
 
   if ((stage >= 9 && stage <= 73) && (millis() - timers[2]) > 70) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, j * 3, 0);
     }
     timers[2] = millis();
@@ -81,7 +81,7 @@ void go_off_air_lights() {
   static int j = 0; 
   
   if (stage == 0) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 250, 0);
     }
     timers[2] = millis();
@@ -90,7 +90,7 @@ void go_off_air_lights() {
   
   if (stage == 1 && (millis()-timers[2]) > 250) {
     // Off
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
@@ -100,7 +100,7 @@ void go_off_air_lights() {
   if (stage == 2 && (millis() - timers[2]) > 75) {
 
     // on low for 10s
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 180, 0);
     }
     timers[2] = millis();
@@ -108,7 +108,7 @@ void go_off_air_lights() {
   }
 
   if (stage == 3 && (millis() - timers[2]) > 75) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }
     timers[2] = millis();
@@ -116,7 +116,7 @@ void go_off_air_lights() {
   }
 
   if (stage == 4 && (millis() - timers[2]) > 75) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 210, 0);
     }    
     timers[2] = millis();
@@ -124,7 +124,7 @@ void go_off_air_lights() {
   }
   
   if (stage == 5 && (millis() - timers[2]) > 350) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }    
     timers[2] = millis();
@@ -132,7 +132,7 @@ void go_off_air_lights() {
   }
 
   if (stage == 6 && (millis() - timers[2]) > 75) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 255, 0);
     }    
     timers[2] = millis();
@@ -140,7 +140,7 @@ void go_off_air_lights() {
   }
   
   if (stage == 7 && (millis() - timers[2]) > 75) {
-    for (i = 0; i < NUM_LEDS; i++) {
+    for (i = 0; i < ONAIR_NUM; i++) {
       onair_leds[i] = CRGB(0, 0, 0);
     }    
     timers[2] = millis();
@@ -193,8 +193,25 @@ void stream_button_off_air() {
 
 }
 
-void controller_boxes() {
+void test_patterns() {
+  
+  static int fade_wait=0;
+  static int hue = 0;
+  static int val = 1;
+  int sat = 187;
+  
+  if((fade_wait % 100) == 0) {
+    for(int i = 0; i<NGALAC_NUM;i++) {
+      ngalac_leds[i] = CHSV(187+val*11, sat, 100);
+    }
+    for(int i = 0; i<CONT_BOX_A_NUM;i++) {
+      controller_boxA[i] = CHSV(187+val*22, sat, 100);
+      controller_boxB[i] = CHSV(187+val*44, sat, 100);
+    }
+    fade_wait = 0;
+    val = -1*val;
+  }
+  fade_wait++;
+  
   
 }
-
-

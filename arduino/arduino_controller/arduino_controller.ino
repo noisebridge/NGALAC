@@ -3,10 +3,23 @@
 #include <FastLED.h>
 
 #define FASTLED_ALLOW_INTERRUPTS 0
-#define NUM_LEDS 130
-#define DATA_PIN 37
-CRGB onair_leds[NUM_LEDS];
-CRGB ngalac_leds[NUM_LEDS];
+#define ONAIR_NUM 198
+#define NGALAC_NUM 60
+#define CONT_BOX_A_NUM 60
+#define CONT_BOX_B_NUM 60
+#define CASE_NUM 20
+
+#define ONAIR_PIN 37
+#define NGALAC_PIN 39
+#define CONT_BOX_PINA 43 // stage left
+#define CONT_BOX_PINB 41 // right
+#define CASE_PIN 45
+
+CRGB onair_leds[ONAIR_NUM];
+CRGB ngalac_leds[NGALAC_NUM];
+CRGB controller_boxA[CONT_BOX_A_NUM];
+CRGB controller_boxB[CONT_BOX_B_NUM];
+CRGB case_leds[CASE_NUM];
 
 volatile static int stage;
 
@@ -190,6 +203,7 @@ void handle_lights(void){
       // button light
       stream_button_off_air();
     }
+    test_patterns();
 }
 
 void on_unknown_command(void){
@@ -276,12 +290,11 @@ void adjust_webcam_angle() {
     static int running = 0;
     
     knob = analogRead(analog_pins[read_webcam_angle]);
-    status[8]=knob;
     knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-    status[9]=knob;
     if(abs(knob - current_angle) > 2) {
       webcam_angle.attach(output_pins[set_webcam_angle]);
       webcam_angle.write(knob);
+      status[8] = webcam_angle.read();
       timers[servo_delay]=millis();
       running = 1;
     }
@@ -343,8 +356,12 @@ void keep_time() {
 
 void setup() {
     Serial.begin(BAUD_RATE);
-    FastLED.addLeds<WS2812, DATA_PIN>(onair_leds, NUM_LEDS); // GRB
-
+    FastLED.addLeds<WS2812, ONAIR_PIN>(onair_leds, ONAIR_NUM); // GRB
+    FastLED.addLeds<WS2812, NGALAC_PIN>(ngalac_leds, NGALAC_NUM); // GRB
+    FastLED.addLeds<WS2812, CONT_BOX_PINA>(controller_boxA, CONT_BOX_A_NUM); // GRB
+    FastLED.addLeds<WS2812, CONT_BOX_PINB>(controller_boxB, CONT_BOX_B_NUM); // GRB
+    FastLED.addLeds<WS2812, CASE_PIN>(case_leds, CASE_NUM); // GRB
+    
     attach_callbacks();
     stage = 0;
     
