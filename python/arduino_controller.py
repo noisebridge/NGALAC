@@ -81,9 +81,9 @@ class ArduinoController():
         return all(self.__firmware_version__[i] == board_firmware[i]
                 for i in range(0, 3))
 
-        def flush(self):
-            while self._recv_cmd() is not None:
-                pass
+    def flush(self):
+        while self._recv_cmd() is not None:
+            pass
 
     def read(self):
         return self._recv_cmd()

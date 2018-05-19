@@ -7,7 +7,8 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               StartStreamingRequest,
                               StopStreamingRequest,
                               StartStopStreamingRequest,
-                              StartStopRecordingRequest
+                              StartStopRecordingRequest,
+                              SetCurrentSceneRequest.
                               )
 from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
@@ -46,10 +47,10 @@ async def main():
 
     board.release_latches()
 
-    streaming = False
+    streaming = True
     obs_recording = False
-    obs_streaming = False
-    player = False
+    obs_streaming = True
+    player = True
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
@@ -70,24 +71,14 @@ async def main():
                 if ret:
                     cmd, state = ret
                     print(ret)
-                    if not player and state[board_status.player_timeout] == 1:
-                        player = True
-                        # run gretting script on OBS
-                    elif player and state[board_status.player_timeout] == 0:
-                        player = False
-                        # exit standby, run help script or execute some fun
-                        # stuff
 
-                    if state[board_status.stream_button] == 1 and not streaming:
-                        await obsws.require(StartStopStreamingRequest())
-                        await obsws.require(StartStopRecordingRequest())
-                        board.lights(1)
+                    if state[board_status.stream_button] == 1:
+                        await obsws.require(SetCurrentSceneRequest("Live"))
+                        board.on_air()
 
-                    if state[board.stream_button] == 1 and streaming:
-                        
-                        await obsws.require(StartStopStreamingRequest())
-                        await obsws.require(StartStopRecordingRequest())
-                        board.lights(0)
+                    if state[board.stream_button] == 1:
+                        await obsws.require(SetCurrentSceneRequest("NotLive"))
+                        board.off_air()
 
                 board.release_latches()
 
