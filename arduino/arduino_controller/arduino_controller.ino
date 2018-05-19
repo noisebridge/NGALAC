@@ -5,8 +5,8 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define ONAIR_NUM 198
 #define NGALAC_NUM 60
-#define CONT_BOX_A_NUM 60
-#define CONT_BOX_B_NUM 60
+#define CONT_BOX_A_NUM 90
+#define CONT_BOX_B_NUM 90
 #define CASE_NUM 20
 
 #define ONAIR_PIN 37
@@ -294,7 +294,6 @@ void adjust_webcam_angle() {
     if(abs(knob - current_angle) > 2) {
       webcam_angle.attach(output_pins[set_webcam_angle]);
       webcam_angle.write(knob);
-      status[8] = webcam_angle.read();
       timers[servo_delay]=millis();
       running = 1;
     }
@@ -323,7 +322,7 @@ void handle_input() {
     idx += NUM_OUTPUT;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-//        status[idx + pin]=pin_latched[pin];
+        status[idx + pin]=pin_latched[pin];
     }
     
     idx += NUM_INPUT;    

@@ -8,7 +8,7 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               StopStreamingRequest,
                               StartStopStreamingRequest,
                               StartStopRecordingRequest,
-                              SetCurrentSceneRequest.
+                              SetCurrentSceneRequest
                               )
 from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
@@ -51,6 +51,8 @@ async def main():
     obs_recording = False
     obs_streaming = True
     player = True
+    x = time.time()*1000
+    live = False;
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
@@ -61,8 +63,9 @@ async def main():
         while True:
             try:
                 obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
-                streaming = obs_status['streaming']
-                recording = obs_status['recording']
+                if obs_status is not None:
+                    streaming = obs_status['streaming']
+                    recording = obs_status['recording']
 
                 board.flush()
                 board.get_state()
@@ -72,13 +75,15 @@ async def main():
                     cmd, state = ret
                     print(ret)
 
-                    if state[board_status.stream_button] == 1:
-                        await obsws.require(SetCurrentSceneRequest("Live"))
+                    if state[board_status.stream_button] == 1 and streaming == False:
+                        await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
                         board.on_air()
+                        streaming = True
 
-                    if state[board.stream_button] == 1:
-                        await obsws.require(SetCurrentSceneRequest("NotLive"))
+                    if state[board_status.stream_button] == 1 and streaming == True:
+                        await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
                         board.off_air()
+                        streaming = False
 
                 board.release_latches()
 

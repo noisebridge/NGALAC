@@ -193,23 +193,30 @@ void stream_button_off_air() {
 
 }
 
+// void fadeall(int leds_num, CRGB leds) {
+//  for(int i = 0; i < leds_num; i++) {
+//    leds[i].nscale8(250);
+//  }
+//}
+
 void test_patterns() {
   
   static int fade_wait=0;
   static int hue = 0;
-  static int val = 1;
-  int sat = 187;
-  
-  if((fade_wait % 100) == 0) {
+  static int val = 255;
+  int sat = 255;
+
+  if((fade_wait % 10) == 0) {
     for(int i = 0; i<NGALAC_NUM;i++) {
-      ngalac_leds[i] = CHSV(187+val*11, sat, 100);
+      ngalac_leds[i] = CHSV(hue++, sat, val);
     }
+    
     for(int i = 0; i<CONT_BOX_A_NUM;i++) {
-      controller_boxA[i] = CHSV(187+val*22, sat, 100);
-      controller_boxB[i] = CHSV(187+val*44, sat, 100);
+      controller_boxA[i] = CHSV(hue++, sat, val);
+      controller_boxB[i] = CHSV(hue++, sat, val);
     }
     fade_wait = 0;
-    val = -1*val;
+//    val = -1*val;
   }
   fade_wait++;
   
