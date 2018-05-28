@@ -63,7 +63,7 @@ class ArduinoController():
             pass
 
     def get_firmware(self):
-        self.flush()
+        # self.flush()
         self._send_cmd('req_firmware')
         cmd, board_firmware = self._recv_cmd()
         if cmd == 'send_firmware':
@@ -72,7 +72,7 @@ class ArduinoController():
             # bad command handling
             pass
 
-        self.flush()
+        # self.flush()
         return board_firmware
 
     def check_firmware(self):

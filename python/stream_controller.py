@@ -52,7 +52,7 @@ async def main():
     obs_streaming = True
     player = True
     x = time.time()*1000
-    live = False;
+    live = True;
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
@@ -67,7 +67,7 @@ async def main():
                     streaming = obs_status['streaming']
                     recording = obs_status['recording']
 
-                board.flush()
+                # board.flush()
                 board.get_state()
                 ret = board.read()
 
@@ -79,11 +79,13 @@ async def main():
                         await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
                         board.on_air()
                         streaming = True
+                        state[board_status.stream_button] = 0
 
-                    if state[board_status.stream_button] == 1 and streaming == True:
+                    elif state[board_status.stream_button] == 1 and streaming == True:
                         await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
                         board.off_air()
                         streaming = False
+                        state[board_status.stream_button] = 0
 
                 board.release_latches()
 
