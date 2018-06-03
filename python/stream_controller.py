@@ -47,43 +47,39 @@ async def main():
 
     board.release_latches()
 
-    streaming = True
-    obs_recording = False
-    obs_streaming = True
-    player = True
-    x = time.time()*1000
-    live = True;
+    streaming = False
+    player = False
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
         obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
         streaming = obs_status['streaming']
-        recording = obs_status['recording']
 
         while True:
             try:
                 obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
                 if obs_status is not None:
                     streaming = obs_status['streaming']
-                    recording = obs_status['recording']
 
-                # board.flush()
+                board.flush()
                 board.get_state()
                 ret = board.read()
 
                 if ret:
                     cmd, state = ret
-                    print(ret)
+                    print("{}  :  {}".format(ret, streaming))
 
                     if state[board_status.stream_button] == 1 and streaming == False:
-                        await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
                         board.on_air()
+                        await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
+                        await obsws.require(StartStreamingRequest())
                         streaming = True
                         state[board_status.stream_button] = 0
 
                     elif state[board_status.stream_button] == 1 and streaming == True:
-                        await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
                         board.off_air()
+                        await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
+                        await obsws.require(StopStreamingRequest())
                         streaming = False
                         state[board_status.stream_button] = 0
 
@@ -99,6 +95,6 @@ try:
     asyncio.ensure_future(main())
     loop.run_forever()
 except KeyboardInterrupt:
-    pass
+    dass
 finally:
     loop.close()

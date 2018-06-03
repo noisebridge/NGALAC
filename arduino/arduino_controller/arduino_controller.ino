@@ -312,7 +312,8 @@ void handle_input() {
     int idx = 0;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[pin]=pin_state[pin];
+//        status[pin]=pin_state[pin];
+        status[pin]=digitalRead(input_pins[pin]);
     }
     idx += NUM_INPUT;
 
