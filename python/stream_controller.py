@@ -67,7 +67,7 @@ async def main():
 
                 if ret:
                     cmd, state = ret
-                    print("{}  :  {}".format(ret, streaming))
+                    # print("{}  :  {}".format(ret, streaming))
 
                     if state[board_status.stream_button] == 1 and streaming == False:
                         board.on_air()
