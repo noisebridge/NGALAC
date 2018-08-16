@@ -79,8 +79,8 @@ enum delays{
 };
 
 /* Timers - may move to hw timers but currently unecessary */
-const unsigned long timers[NUM_DELAYS]={0, 0};
-const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
+unsigned long timers[NUM_DELAYS]={0, 0};
+unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
 
 Servo webcam_angle;       // Servo to adjust webcam angle
 
@@ -248,7 +248,7 @@ void handle_input() {
     }
     idx += NUM_INPUT;
 
-    for(pin=0; pin<NUM_OUPUT; pin++) {
+    for(pin=0; pin<NUM_OUTPUT; pin++) {
         status[idx + pin]=digitalRead(output_pins[pin]);
     }
     idx += NUM_OUTPUT;
@@ -259,7 +259,7 @@ void handle_input() {
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[idx + pin]=latch_value[pin];
+        status[idx + pin]=pin_latch_value[pin];
     }
     
 }
@@ -280,7 +280,7 @@ void keep_time() {
         adjust_webcam_angle();
     }
 
-    if (millis() - timers[player_activity]) > waits[player_activity] {
+    if (millis() - timers[player_activity] > waits[player_activity]) {
         status[12] = 1;  // timeout indication ot stream PC
         // need to send to rpi also, tbd till interface defined
     }
@@ -318,7 +318,7 @@ void loop() {
 
     c.feedinSerialData();
     read_btns();
-    hangle_input();
+    handle_input();
     keep_time();
 
 }
