@@ -9,11 +9,11 @@
 #define CONT_BOX_B_NUM 90
 #define CASE_NUM 20
 
-#define ONAIR_PIN 37
-#define NGALAC_PIN 39
-#define CONT_BOX_PINA 43 // stage left
-#define CONT_BOX_PINB 41 // right
-#define CASE_PIN 45
+#define CONT_BOX_PINA 33 // stage left
+#define CONT_BOX_PINB 35 // right
+#define NGALAC_PIN 37
+#define ONAIR_PIN 39
+#define CASE_PIN 41
 
 CRGB onair_leds[ONAIR_NUM];
 CRGB ngalac_leds[NGALAC_NUM];
@@ -29,9 +29,9 @@ Servo webcam_angle;       // Servo to adjust webcam angle
 
 #define NUM_INPUT 3
 enum inputs {
-    blank0,              // Infrared sensor
+    blank0,
     blank1,
-    stream_button     // big green stream button
+    stream_button        // big green stream button
 };
 const int input_pins[NUM_INPUT] = {32, 34, 11};
 
@@ -41,7 +41,7 @@ enum ouptuts {
     set_webcam_angle,
     blank3
 };
-const int output_pins[NUM_OUTPUT] = {43, 13, 47};
+const int output_pins[NUM_OUTPUT] = {53, 5, 51};
 
 #define NUM_ANALOG 3
 enum analogs {
@@ -49,7 +49,7 @@ enum analogs {
     read_pir,
     stream_button_light,  // output to control the stream button light
 };
-const int analog_pins[NUM_ANALOG] = {A0, A1, 12};
+const int analog_pins[NUM_ANALOG] = {A0, A1, 7};
 
 /*
 #if defined(__AVR_ATmega328P__)
@@ -66,7 +66,7 @@ const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 */
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 3};
+const static int firmware_version[3] = {0, 1, 5};
 
 /* system status messaging to stream PC */
 #define STATUS_BITS 15
@@ -265,6 +265,7 @@ void read_btns(void) {
             pin_state[pin]=1;
             state_change=1;
         }
+
         if((y_old[pin] < 0x0F)&&(flag[pin]==0)) {
             flag[pin]=1;
             pin_state[pin]=0;
