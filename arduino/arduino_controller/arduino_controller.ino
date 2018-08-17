@@ -1,6 +1,7 @@
 #include "CmdMessenger.h"
 #include "Servo.h"
 #include <FastLED.h>
+#include <avr/io.h>
 
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define ONAIR_NUM 198
@@ -298,14 +299,55 @@ void adjust_webcam_angle() {
       timers[servo_delay]=millis();
       running = 1;
     }
-    
+
     if (running == 1 && (millis() - timers[servo_delay] > 50)) {
       webcam_angle.detach();
       running = 0;
     }
 }
 
-/* 
+/*
+ * Setup low-level registers for controlling servo using PWM.
+ *
+ * We use timer 3 which controls pins 2, 3, and 5.
+ *
+ * The analogWrite function will not work correctly on pins 2, 3, and 5!
+ */
+void setup_servo_registers() {
+  // I don't know what the top two bits in TCCR3B do, so not touching them.
+  // Set prescaler to 010, meaning clk / 8, meaning 2 MHz.
+  TCCR3B &= ~0x7;
+  TCCR3B |= 0x2;
+  // Set WGM33 and WGM32 to 0b11
+  TCCR3B |= (1 << WGM33) | (1 << WGM32);
+  // Set WGM31 and WGM30 to 0b10
+  TCCR3A |= (1 << WGM31);
+  TCCR3A &= ~(1 << WGM30);
+  // Set wrap-around point at 40,000. At 2 MHz this means we wrap around every 20ms.
+  ICR3 = 40000;
+  // Set pin 2 to output;
+}
+
+/*
+ * Adjust servo height using PWM.
+ *
+ * The servo expects a pulse every ~20ms with a width between 1 and 2 ms.
+ *
+ * A pulse of width 1ms will adjust the servo to one extreme; 2ms will move it to the other extreme.
+ *
+ * Because FastLED interferes with the normal Servo library, we use the PWM hardware to control
+ * the servo.
+ *
+ * Since there is no high-level library that I'm aware of for doing this, we use the low-level
+ * register-based interface for controlling this.
+ */
+void set_servo_angle_pwm(int angle) {
+  // angle should be between 0 and 180
+  int pulse_width = map(angle, 0, 180, 2000, 4000);
+  OCR3B = pulse_width;
+}
+
+/*
  * Input handling.  Anything the arduino received gets processed here.
  */
 void handle_input() {
@@ -391,6 +433,12 @@ void setup() {
     webcam_angle.attach(output_pins[set_webcam_angle]);
     timers[servo_delay] = millis();
     timers[player_activity] = millis();
+
+    pinMode(2, OUTPUT);
+    setup_servo_registers();
+    // TODO figure out how to get rid of this analogWrite function
+    analogWrite(2, 127);
+    set_servo_angle_pwm(90);
 }
 
 void loop() {
