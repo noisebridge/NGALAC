@@ -1,24 +1,57 @@
 #include "CmdMessenger.h"
 #include "Servo.h"
+#include <FastLED.h>
 
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define ONAIR_NUM 198
+#define NGALAC_NUM 60
+#define CONT_BOX_A_NUM 90
+#define CONT_BOX_B_NUM 90
+#define CASE_NUM 20
 
-/*
- * Define which pins will be input / output depending on what board is used. 
- * Mostly needed right now to programand test on a Nano and install on the Leonardo
- *
- * The array of pins should be static, these determine the physical hookups.
- * The input and output enumbs, defined below, will always pull from the same array
- * position.  This is why the array values must stay the same, they just pass through the 
- * connection to the physical board.
- */
+#define CONT_BOX_PINA 33 // stage left
+#define CONT_BOX_PINB 35 // right
+#define NGALAC_PIN 37
+#define ONAIR_PIN 39
+#define CASE_PIN 41
+
+CRGB onair_leds[ONAIR_NUM];
+CRGB ngalac_leds[NGALAC_NUM];
+CRGB controller_boxA[CONT_BOX_A_NUM];
+CRGB controller_boxB[CONT_BOX_B_NUM];
+CRGB case_leds[CASE_NUM];
+
+volatile static int stage;
+
+#define SERVO_MAX_ANGLE 110
+#define SERVO_MIN_ANGLE 75
+Servo webcam_angle;       // Servo to adjust webcam angle
 
 #define NUM_INPUT 3
+enum inputs {
+    blank0,
+    blank1,
+    stream_button        // big green stream button
+};
+const int input_pins[NUM_INPUT] = {32, 34, 11};
+
 #define NUM_OUTPUT 3
+enum ouptuts {
+    blank2,
+    set_webcam_angle,
+    blank3
+};
+const int output_pins[NUM_OUTPUT] = {53, 5, 51};
+
 #define NUM_ANALOG 3
+enum analogs {
+    read_webcam_angle,
+    read_pir,
+    stream_button_light,  // output to control the stream button light
+};
+const int analog_pins[NUM_ANALOG] = {A0, A1, 7};
 
-#define SERVO_MAX_ANGLE 75
-#define SERVO_MIN_ANGLE 30
-
+/*
 #if defined(__AVR_ATmega328P__)
 const int input_pins[NUM_INPUT] = {5, 6, 7};
 const int output_pins[NUM_OUTPUT] = {2, 3, 4};
@@ -30,13 +63,37 @@ const int input_pins[NUM_INPUT] = {9, 10, 11};
 const int output_pins[NUM_OUTPUT] = {5, 6, 7};
 const int analog_pins[NUM_ANALOG] = {ADC0, ADC1, ADC2};
 #endif
+*/
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 2};
+const static int firmware_version[3] = {0, 1, 5};
 
 /* system status messaging to stream PC */
-#define STATUS_BITS 13
+#define STATUS_BITS 15
 int status[STATUS_BITS];
+
+/* 0 digital input 0
+ * 1 digital input 1
+ * 2 digital input 2
+ * 
+ * 3 digital output 0
+ * 4 digital output 1
+ * 5 digital output 2
+ * 
+ * 6 digital input pin latched 0
+ * 7 digital input pin latched 1
+ * 8 digital input pin latched 2
+ * 
+ *  9 digital input pin value 0
+ * 10 digital input pin value 1
+ * 11 digital input pin value 2
+ * 
+ * 12 digital input pin player 
+ * 13 digital input pin stream status
+ * 14 digital input pin stream toggle
+ * 
+ */
+
 
 /* Define available CmdMessenger commands */
 enum {
@@ -49,49 +106,34 @@ enum {
     get_state,
     ret_state,
     release_latches,
+    on_air,
+    off_air,
     error
 };
 
-/*
- * The inputs and outputs enumos define which buttons are attached to which physical pins as defined
- * int the input_pins and output_pins arrays above.
- */
-
-enum inputs {
-    pir,              // Infrared sensor
-    blank,
-    stream_button     // big green stream button
-};
-
-enum ouptuts {
-    stream_button_light,  // output to control the stream button light
-    set_webcam_angle
-};
-
-enum analogs {
-    read_webcam_angle
-};
-
-#define NUM_DELAYS 2
+/* Timers - may move to hw timers but currently unecessary */
+#define NUM_DELAYS 4
 enum delays{
     servo_delay,
-    player_activity
+    player_activity,
+    air_status,
+    stream_light
 };
+static unsigned long timers[NUM_DELAYS]={0, 0, 0, 0};
+const unsigned long waits[NUM_DELAYS]={50, 900000, 0, 0};  // 15m * 60s * 1000ms
+//const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
 
-/* Timers - may move to hw timers but currently unecessary */
-const unsigned long timers[NUM_DELAYS]={0, 0};
-const unsigned long waits[NUM_DELAYS]={50, 900000};  // 15m * 60s * 1000ms
-
-Servo webcam_angle;       // Servo to adjust webcam angle
 
 /* 
  * Button handling 
  * The buttons need debouncing, and values ma or may not need latchhing.  
  */
-uint8_t pin_latch_value[NUM_INPUT];
-uint8_t pin_latched[NUM_INPUT];
-uint8_t pin_active[NUM_INPUT];
-uint8_t pin_state[NUM_INPUT];
+int pin_latch_value[NUM_INPUT];
+int pin_latched[NUM_INPUT];
+int pin_active[NUM_INPUT];
+static int pin_state[NUM_INPUT];
+static uint16_t y_old[NUM_INPUT];
+static int flag[NUM_INPUT];
 
 /* Initial Light state */
 int light_state = LOW;
@@ -140,24 +182,28 @@ void send_state(void){
 
 /* sends only value of pir input */
 void is_player(void){
-    c.sendBinCmd(player, (int)pin_state[pir]);
+    c.sendBinCmd(player, (int)pin_state[read_pir]);
 }
 
 /* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
-void lights_handler(void){
-    int param1 = c.readBinArg<bool>();
-    // int param2 = c.readBinArg<int>();
-
-    if(param1 == 0) {
-        light_state = LOW;
+void handle_lights(void){
+  
+    if(status[13]==1) {
+      // on air lights
+      if(status[14] == 1) {
+        go_on_air_lights();
+      }
+      // button light
+      stream_button_on_air();
     } else {
-        light_state = HIGH;
+      // off air lights
+      if(status[14] == 1) {
+        go_off_air_lights();
+      }
+      // button light
+      stream_button_off_air();
     }
-
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        digitalWrite(output_pins[pin], light_state);
-    }
-    send_state();
+    test_patterns();
 }
 
 void on_unknown_command(void){
@@ -173,7 +219,6 @@ void unlatch_pins(){
         pin_latched[pin]=0;
         pin_latch_value[pin]=0;
     }
-    send_state();
 }
 
 /* Attach callbacks for CmdMessenger commands */
@@ -181,10 +226,23 @@ void attach_callbacks(void) {
     c.attach(ping, do_pong);
     c.attach(req_firmware, do_send_firmware);
     c.attach(player, is_player);
-    c.attach(lights, lights_handler);
     c.attach(get_state, send_state);
     c.attach(on_unknown_command);
+    c.attach(on_air, go_on_air);
+    c.attach(off_air, go_off_air);
     c.attach(release_latches, unlatch_pins);
+}
+
+void go_on_air() {
+  stage = 0;
+  status[13] = 1;
+  status[14] = 1;  // trigger lights
+}
+
+void go_off_air() {
+  stage = 0;
+  status[13] = 0;
+  status[14] = 1;  // trigger lights
 }
 
 /*
@@ -192,34 +250,34 @@ void attach_callbacks(void) {
  * the debounce is handled in two stages, a simulated RC filter and a schmitt trigger.
  */
 void read_btns(void) {
-    static uint8_t y_old[NUM_INPUT];
+    long temp=0;
     int state_change = 0;
 
-    for(pin=0; pin<NUM_INPUT; pin++) {
-        y_old[pin]=0;
-    }
-
-    for(pin=0;pin<NUM_INPUT;pin++){
+    for(pin=0; pin<NUM_INPUT; pin++){
         y_old[pin] = y_old[pin] - (y_old[pin] >> 2);
-
-        if(digitalRead(input_pins[pin])){y_old[pin] = y_old[pin] + 0x3F;}
-
-        if((y_old[pin] > 0xF0)&&(pin_state[pin]==0)) {
-            pin_state[pin]=1;
-            state_change=1; 
+        
+        if(digitalRead(input_pins[pin])==1){
+          y_old[pin] = y_old[pin] + 0x3F;
         }
-        if((y_old[pin] < 0x0F)&&(pin_state[pin]==1)) {
+                
+        if((y_old[pin] > 0xF0)&&(flag[pin]==1)) {
+            flag[pin]=0;
+            pin_state[pin]=1;
+            state_change=1;
+        }
+
+        if((y_old[pin] < 0x0F)&&(flag[pin]==0)) {
+            flag[pin]=1;
             pin_state[pin]=0;
             state_change=1;
         }
         // handle this better for active high/low switches.
-        if((state_change==1)&&(pin_latched[pin]==0)&&pin_state[pin]==pin_active[pin]) {
-            pin_latch_value[pin]=pin_active[pin];
+        if((state_change==1)&&(pin_latched[pin]==0)&&pin_state[pin]==1) {
+            pin_latch_value[pin]=1;
             pin_latched[pin]=1;
         }
         state_change=0;
     }
-
 }
 
 /* 
@@ -228,12 +286,23 @@ void read_btns(void) {
  * hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
  */
 void adjust_webcam_angle() {
-    int val;
-    val = analogRead(analog_pins[read_webcam_angle]);
-    val = map(val, 0, 1023, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-    webcam_angle.write(val);
-
-    timers[servo_delay]=millis();
+    int knob;
+    int current_angle = webcam_angle.read();
+    static int running = 0;
+    
+    knob = analogRead(analog_pins[read_webcam_angle]);
+    knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
+    if(abs(knob - current_angle) > 2) {
+      webcam_angle.attach(output_pins[set_webcam_angle]);
+      webcam_angle.write(knob);
+      timers[servo_delay]=millis();
+      running = 1;
+    }
+    
+    if (running == 1 && (millis() - timers[servo_delay] > 50)) {
+      webcam_angle.detach();
+      running = 0;
+    }
 }
 
 /* 
@@ -244,24 +313,25 @@ void handle_input() {
     int idx = 0;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[pin]=pin_state[pin];
+//        status[pin]=pin_state[pin];
+        status[pin]=digitalRead(input_pins[pin]);
     }
     idx += NUM_INPUT;
 
-    for(pin=0; pin<NUM_OUPUT; pin++) {
+    for(pin=0; pin<NUM_OUTPUT; pin++) {
         status[idx + pin]=digitalRead(output_pins[pin]);
     }
     idx += NUM_OUTPUT;
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[pin + NUM_OUTPUT + NUM_INPUT]=pin_latched[pin];
+        status[idx + pin]=pin_latched[pin];
     }
+    
     idx += NUM_INPUT;    
 
     for(pin=0; pin<NUM_INPUT; pin++) {
-        status[idx + pin]=latch_value[pin];
+        status[idx + pin]=pin_latch_value[pin];
     }
-    
 }
 
 /*
@@ -269,33 +339,40 @@ void handle_input() {
  */
 void keep_time() {
 
-    /* Right now the motor us using athe abs value of analog signal, so this is proper. however, the following
-     * changes will be needed.
-     * delay iff motor triggered last loop
-     * trigger motor iff button pressed
-     *  momentary -> move x positions
-     *  held -> move then roll back y positive to correct for overshoot from human reflexes.
-     */
     if (millis() - timers[servo_delay] > waits[servo_delay]) {
+      // timer reset in adjust_webcam_angle IF servo is moved
         adjust_webcam_angle();
     }
-
-    if (millis() - timers[player_activity]) > waits[player_activity] {
-        status[12] = 1;  // timeout indication ot stream PC
+    
+    if(analogRead(analog_pins[read_pir]) > 500) {
+      status[12] = 1; // indicate a player is at the machine
+      timers[player_activity] = millis();
+    }
+    
+    if ((millis() - timers[player_activity]) > waits[player_activity]) {
+        status[12] = 0;  // timeout indication ot stream PC
         // need to send to rpi also, tbd till interface defined
     }
 }
 
 void setup() {
     Serial.begin(BAUD_RATE);
-
+    FastLED.addLeds<WS2812, ONAIR_PIN>(onair_leds, ONAIR_NUM); // GRB
+    FastLED.addLeds<WS2812, NGALAC_PIN>(ngalac_leds, NGALAC_NUM); // GRB
+    FastLED.addLeds<WS2812, CONT_BOX_PINA>(controller_boxA, CONT_BOX_A_NUM); // GRB
+    FastLED.addLeds<WS2812, CONT_BOX_PINB>(controller_boxB, CONT_BOX_B_NUM); // GRB
+    FastLED.addLeds<WS2812, CASE_PIN>(case_leds, CASE_NUM); // GRB
+    
     attach_callbacks();
-
+    stage = 0;
+    
     for(pin=0; pin<NUM_INPUT; pin++) {
         pin_latch_value[pin] = 0;   // Latched value set to 0, if not latched, this doesn't matter and is just an init
         pin_latched[pin] = 0;       // initially, no pins are latched.
         pin_active[pin] = 1;        // This is hard coded where it may be needed per pin in the future.
-        pin_state[pin] = 1;         // This is just an initial value, doesn't matter.
+        pin_state[pin] = 0;         // This is just an initial value, doesn't matter.
+        y_old[pin]=0;
+        flag[pin]=0;
     }
 
     for(pin=0; pin<NUM_INPUT; pin++) {
@@ -303,23 +380,26 @@ void setup() {
     }
 
     for(pin=0; pin<NUM_ANALOG; pin++) {
-        pinMode(analog_pins[pin], INPUT);
+        pinMode(analog_pins[pin], INPUT_PULLUP);
     }
 
     for(pin=0; pin<NUM_OUTPUT; pin++) {
         pinMode(output_pins[pin], OUTPUT);
-        digitalWrite(output_pins[pin], LOW);
+        digitalWrite(output_pins[pin], HIGH);
     }
 
     webcam_angle.attach(output_pins[set_webcam_angle]);
+    timers[servo_delay] = millis();
+    timers[player_activity] = millis();
 }
 
 void loop() {
 
     c.feedinSerialData();
     read_btns();
-    hangle_input();
+    handle_input();
+    handle_lights();
     keep_time();
-
+    FastLED.show();
 }
 

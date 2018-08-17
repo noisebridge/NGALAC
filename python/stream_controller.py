@@ -7,13 +7,14 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               StartStreamingRequest,
                               StopStreamingRequest,
                               StartStopStreamingRequest,
-                              StartStopRecordingRequest
+                              StartStopRecordingRequest,
+                              SetCurrentSceneRequest
                               )
 from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
 
 
-class board_status(Enum):
+class board_status:
     ''' Pin definitions to read state returned from board '''
 
     # inputs
@@ -37,7 +38,7 @@ class board_status(Enum):
     stream_button = 11
 
     # misc
-    player_timeout = 13
+    player_timeout = 12
 
 
 async def main():
@@ -47,45 +48,40 @@ async def main():
     board.release_latches()
 
     streaming = False
-    obs_recording = False
-    obs_streaming = False
     player = False
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
+        obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
+        streaming = obs_status['streaming']
+
         while True:
             try:
+                obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
+                if obs_status is not None:
+                    streaming = obs_status['streaming']
+
                 board.flush()
                 board.get_state()
                 ret = board.read()
 
                 if ret:
                     cmd, state = ret
+                    # print("{}  :  {}".format(ret, streaming))
 
-                    if not player and state[board_status.player] == 1:
-                        player = True
-                        # exit standby, run help script or execute some fun
-                        # stuff
+                    if state[board_status.stream_button] == 1 and streaming == False:
+                        board.on_air()
+                        await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
+                        await obsws.require(StartStreamingRequest())
+                        streaming = True
+                        state[board_status.stream_button] = 0
 
-                    if state[board_status.stream_button] == 1:
-                        await obsws.require(StartStopStreamingRequest())
-                        await obsws.require(StartStopRecordingRequest())
-
-                        obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
-                        obs_streaming = obs_status['streaming']
-                        obs_recording = obs_status['recording']
-
-                    if state[board_status.player_timeout] == 1:
-                        # go to stadby, script needs to be implemented
-                        pass
-
-                if streaming and not (obs_recording or obs_streaming):
-                    streaming = False
-                    board.lights(0)
-
-                elif not streaming and (obs_recording or obs_streaming):
-                    streaming = True
-                    board.lights(1)
+                    elif state[board_status.stream_button] == 1 and streaming == True:
+                        board.off_air()
+                        await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
+                        await obsws.require(StopStreamingRequest())
+                        streaming = False
+                        state[board_status.stream_button] = 0
 
                 board.release_latches()
 
@@ -99,6 +95,6 @@ try:
     asyncio.ensure_future(main())
     loop.run_forever()
 except KeyboardInterrupt:
-    pass
+    dass
 finally:
     loop.close()
