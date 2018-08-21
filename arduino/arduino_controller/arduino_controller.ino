@@ -39,7 +39,7 @@ const int input_pins[NUM_INPUT] = {32, 34, 11};
 #define NUM_OUTPUT 3
 enum ouptuts {
   blank2,
-  set_webcam_angle,
+  webcam_servo,
   blank3
 };
 const int output_pins[NUM_OUTPUT] = {53, 5, 51};
@@ -322,7 +322,7 @@ void setup_webcam_servo_registers() {
    Since there is no high-level library that I'm aware of for doing this, we use the low-level
    register-based interface for controlling this.
 */
-void set_webcam_angle_pwm(int angle) {
+void set_webcam_servo_angle_pwm(int angle) {
   // angle should be between 0 and 180
   int pulse_width = map(angle, 0, 180, 2000, 4000);
   Serial.println(pulse_width);
@@ -342,8 +342,8 @@ void adjust_webcam_angle() {
   knob = analogRead(analog_pins[read_webcam_angle]);
   knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
   if (abs(knob - current_angle) > 2) {
-    set_webcam_angle_pwm(knob);
-//    webcam_angle.attach(output_pins[set_webcam_angle]);
+    set_webcam_servo_angle_pwm(knob);
+//    webcam_angle.attach(output_pins[webcam_servo]);
 //    webcam_angle.write(knob);
     timers[servo_delay] = millis();
     running = 1;
@@ -438,7 +438,7 @@ void setup() {
     digitalWrite(output_pins[pin], HIGH);
   }
 
-  webcam_angle.attach(output_pins[set_webcam_angle]);
+  webcam_angle.attach(output_pins[webcam_servo]);
   timers[servo_delay] = millis();
   timers[player_activity] = millis();
 
@@ -475,6 +475,6 @@ void loop() {
   Serial.print("Read knob value as ");
   Serial.println(knob);
   knob = map(knob, 0, 1024, SERVO_MAX_ANGLE, SERVO_MIN_ANGLE);
-  set_webcam_angle_pwm(knob);
+  set_webcam_servo_angle_pwm(knob);
 }
 
