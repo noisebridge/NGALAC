@@ -291,7 +291,7 @@ void read_btns(void) {
 
    See README.md for more info.
 */
-void setup_servo_registers() {
+void setup_webcam_servo_registers() {
   // Set pin 2 to output.
   pinMode(2, OUTPUT);
   // I don't know what the top two bits in TCCR3B do, so not touching them.
@@ -442,7 +442,7 @@ void setup() {
   timers[servo_delay] = millis();
   timers[player_activity] = millis();
 
-  setup_servo_registers();
+  setup_webcam_servo_registers();
   // TODO figure out how to get rid of this analogWrite function
   analogWrite(2, 127);
   
