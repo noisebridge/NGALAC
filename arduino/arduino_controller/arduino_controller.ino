@@ -333,6 +333,10 @@ void set_webcam_servo_angle_pwm(int angle) {
   OCR3B = pulse_width;
 }
 
+int get_webcam_servo_angle_pwm() {
+  return map(OCR3B, 2000, 4000, 0, 180);
+}
+
 /*
    Stop sending pulses to webcam servo.
 
@@ -348,22 +352,19 @@ void detach_webcam_servo() {
    hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
 */
 void adjust_webcam_angle() {
-  int knob;
-  int current_angle = webcam_angle.read();
   static int running = 0;
-
-  knob = analogRead(analog_pins[read_webcam_angle]);
+  int current_angle = get_webcam_servo_angle_pwm();
+  int knob = analogRead(analog_pins[read_webcam_angle]);
   knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
+
   if (abs(knob - current_angle) > 2) {
     set_webcam_servo_angle_pwm(knob);
-//    webcam_angle.attach(output_pins[webcam_servo]);
-//    webcam_angle.write(knob);
     timers[servo_delay] = millis();
     running = 1;
   }
 
   if (running == 1 && (millis() - timers[servo_delay] > 50)) {
-//    webcam_angle.detach();
+    detach_webcam_servo();
     running = 0;
   }
 }
