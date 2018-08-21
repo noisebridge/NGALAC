@@ -284,6 +284,16 @@ void read_btns(void) {
 
 /*
    Setup low-level registers for controlling webcam servo using PWM.
+ 
+   The servo expects a pulse every ~20ms with a width between 1 and 2 ms.
+
+   A pulse of width 1ms will adjust the servo to one extreme; 2ms will move it to the other extreme.
+
+   Because FastLED interferes with the normal Servo library, we use the PWM hardware to control
+   the servo.
+
+   Since there is no high-level library that I'm aware of for doing this, we use the low-level
+   register-based interface for controlling this.
 
    The webcam servo is on pin 2, which is controlled by timer 3.
 
@@ -312,15 +322,9 @@ void setup_webcam_servo_registers() {
 /*
    Adjust servo height using PWM.
 
-   The servo expects a pulse every ~20ms with a width between 1 and 2 ms.
+   A value of 2000 written to OCR3B will result in a 2000 / 40000 * 20ms = 1ms pulse.
 
-   A pulse of width 1ms will adjust the servo to one extreme; 2ms will move it to the other extreme.
-
-   Because FastLED interferes with the normal Servo library, we use the PWM hardware to control
-   the servo.
-
-   Since there is no high-level library that I'm aware of for doing this, we use the low-level
-   register-based interface for controlling this.
+   A value of 4000 will result in a 4000 / 40000 * 20ms = 2ms pulse.
 */
 void set_webcam_servo_angle_pwm(int angle) {
   // angle should be between 0 and 180
