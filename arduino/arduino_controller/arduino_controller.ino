@@ -283,17 +283,23 @@ void read_btns(void) {
 
 
 /*
-   Setup low-level registers for controlling servo using PWM.
+   Setup low-level registers for controlling webcam servo using PWM.
 
-   We use timer 3 which controls pins 2, 3, and 5.
+   The webcam servo is on pin 2, which is controlled by timer 3.
 
-   The analogWrite function will not work correctly on pins 2, 3, and 5!
+   Note: analogWrite will not work correctly on pins 2, 3, and 5 after we configure this!
+
+   See README.md for more info.
 */
 void setup_servo_registers() {
+  // Set pin 2 to output.
+  pinMode(2, OUTPUT);
   // I don't know what the top two bits in TCCR3B do, so not touching them.
   // Set prescaler to 010, meaning clk / 8, meaning 2 MHz.
   TCCR3B &= ~0x7;
   TCCR3B |= 0x2;
+  // Set WGM33:WGM30 to 0b1110, which means fast PWM, with the timer wrapping around when
+  // its value equals ICR3.
   // Set WGM33 and WGM32 to 0b11
   TCCR3B |= (1 << WGM33) | (1 << WGM32);
   // Set WGM31 and WGM30 to 0b10
@@ -301,7 +307,6 @@ void setup_servo_registers() {
   TCCR3A &= ~(1 << WGM30);
   // Set wrap-around point at 40,000. At 2 MHz this means we wrap around every 20ms.
   ICR3 = 40000;
-  // Set pin 2 to output;
 }
 
 /*
@@ -437,7 +442,6 @@ void setup() {
   timers[servo_delay] = millis();
   timers[player_activity] = millis();
 
-  pinMode(2, OUTPUT);
   setup_servo_registers();
   // TODO figure out how to get rid of this analogWrite function
   analogWrite(2, 127);
