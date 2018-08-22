@@ -443,10 +443,6 @@ void setup() {
     pinMode(input_pins[pin], INPUT_PULLUP);
   }
 
-  for (pin = 0; pin < NUM_ANALOG; pin++) {
-    pinMode(analog_pins[pin], INPUT_PULLUP);
-  }
-
   for (pin = 0; pin < NUM_OUTPUT; pin++) {
     pinMode(output_pins[pin], OUTPUT);
     digitalWrite(output_pins[pin], HIGH);
