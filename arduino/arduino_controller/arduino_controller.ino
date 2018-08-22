@@ -302,6 +302,8 @@ void read_btns(void) {
 void setup_webcam_servo_registers() {
     // Set pin 2 to output.
     pinMode(2, OUTPUT);
+    // TODO figure out how to get rid of this analogWrite function.
+    analogWrite(2, 127);
     // I don't know what the top two bits in TCCR3B do, so not touching them.
     // Set prescaler to 010, meaning clk / 8, meaning 2 MHz.
     TCCR3B &= ~0x7;
@@ -446,8 +448,6 @@ void setup() {
     timers[player_activity] = millis();
 
     setup_webcam_servo_registers();
-    // TODO figure out how to get rid of this analogWrite function
-    analogWrite(2, 127);
 }
 
 void loop() {
