@@ -403,10 +403,7 @@ void handle_input() {
 */
 void keep_time() {
 
-  if (millis() - timers[servo_delay] > waits[servo_delay]) {
-    // timer reset in adjust_webcam_angle IF servo is moved
-    adjust_webcam_angle();
-  }
+  adjust_webcam_angle();
 
   if (analogRead(analog_pins[read_pir]) > 500) {
     status[12] = 1; // indicate a player is at the machine
@@ -455,8 +452,6 @@ void setup() {
   setup_webcam_servo_registers();
   // TODO figure out how to get rid of this analogWrite function
   analogWrite(2, 127);
-  
-  pinMode(analog_pins[read_webcam_angle], INPUT);
 }
 
 void loop() {
