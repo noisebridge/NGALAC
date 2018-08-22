@@ -455,31 +455,11 @@ void setup() {
 }
 
 void loop() {
-//  static int angle = 0;
-//  static int direction = 1;
-//  Serial.print("Setting angle ");
-//  Serial.print(angle);
-//  Serial.println();
-//  set_servo_angle_pwm(angle);
-//  delay(20);
-//  angle += direction;
-//  if (angle >= 180) {
-//    direction = -1;
-//  } else if (angle <= 0) {
-//    direction = 1;
-//  }
-
-//      c.feedinSerialData();
-//      read_btns();
-//      handle_input();
-//      handle_lights();
-//      keep_time();
-//      FastLED.show();
-  int knob;
-  knob = analogRead(analog_pins[read_webcam_angle]);
-  Serial.print("Read knob value as ");
-  Serial.println(knob);
-  knob = map(knob, 0, 1024, SERVO_MAX_ANGLE, SERVO_MIN_ANGLE);
-  set_webcam_servo_angle_pwm(knob);
+  c.feedinSerialData();
+  read_btns();
+  handle_input();
+  handle_lights();
+  keep_time();
+  FastLED.show();
 }
 
