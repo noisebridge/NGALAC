@@ -1,5 +1,4 @@
 #include "CmdMessenger.h"
-#include "Servo.h"
 #include <FastLED.h>
 #include <avr/io.h>
 
@@ -26,7 +25,6 @@ volatile static int stage;
 
 #define SERVO_MAX_ANGLE 110
 #define SERVO_MIN_ANGLE 10
-Servo webcam_angle;       // Servo to adjust webcam angle
 
 #define NUM_INPUT 3
 enum inputs {
@@ -444,7 +442,6 @@ void setup() {
         digitalWrite(output_pins[pin], HIGH);
     }
 
-    webcam_angle.attach(output_pins[webcam_servo]);
     timers[servo_delay] = millis();
     timers[player_activity] = millis();
 
