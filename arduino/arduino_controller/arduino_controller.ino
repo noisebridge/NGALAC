@@ -338,15 +338,6 @@ int get_webcam_servo_angle_pwm() {
 }
 
 /*
-    Stop sending pulses to webcam servo.
-
-    If we don't detach after adjusting the position, the servo will burn out eventually.
-*/
-void detach_webcam_servo() {
-    // OCR3B = 0;
-}
-
-/*
     Adjust servo height.  Input us an analog signal between ground and VCC+, constrained
     by the values which make the camera visible.  Easiest adjustor is a slider/knob/rocker potentiometer,
     hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
