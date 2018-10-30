@@ -179,14 +179,14 @@ void stream_button_on_air() {
 
 void stream_button_off_air() {
   static int val = 255;
-
+  static long interval = 300;
   if(val >= 255) {
     val = 0;
   } else {
     val = 255;
   }
   
-  if ((millis() - timers[3]) > 500) {
+  if ((millis() - timers[3]) > interval) {
     analogWrite(analog_pins[stream_button_light], val);
     timers[3] = millis();
   }

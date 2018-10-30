@@ -2,17 +2,17 @@ from PyCmdMessenger import ArduinoBoard, CmdMessenger
 import obswsrc
 
 COMMANDS = [['ping', ''],
-        ['pong', 's'],
-        ['req_firmware', ''],
-        ['send_firmware', 'i*'],
-        ['player', 'i'],
-        ['lights', 's'],
-        ['get_state', ''],
-        ['ret_state', 'i*'],
-        ['release_latches', 's'],
-        ['on_air', ''],
-        ['off_air', ''],
-        ['error', '']]
+            ['pong', 's'],
+            ['req_firmware', ''],
+            ['send_firmware', 'i*'],
+            ['player', 'i'],
+            ['lights', 's'],
+            ['get_state', ''],
+            ['ret_state', 'i*'],
+            ['release_latches', 's'],
+            ['on_air', ''],
+            ['off_air', ''],
+            ['error', '']]
 
 
 class ArduinoController():
@@ -27,11 +27,11 @@ class ArduinoController():
         opens a tty connection with 2 ends.  Device on 1, io on other
     '''
 
-    __firmware_version__ = (0, 1, 3)
+    __firmware_version__ = (0, 1, 6)
 
     def __init__(self,
-            serial_port="/dev/pts/2",
-            baud_rate=9600):
+                 serial_port="/dev/pts/2",
+                 baud_rate=9600):
 
         self.arduino = ArduinoBoard(serial_port, baud_rate)
         self.commands = dict(COMMANDS)
@@ -77,7 +77,7 @@ class ArduinoController():
 
         board_firmware = self.get_firmware()
         return all(self.__firmware_version__[i] == board_firmware[i]
-                for i in range(0, 3))
+                   for i in range(0, 3))
 
     def flush(self):
         while self._recv_cmd() is not None:

@@ -14,6 +14,7 @@
 #define NGALAC_PIN 37
 #define ONAIR_PIN 39
 #define CASE_PIN 41
+#define SERVO_PIN 2
 
 CRGB onair_leds[ONAIR_NUM];
 CRGB ngalac_leds[NGALAC_NUM];
@@ -30,25 +31,26 @@ volatile static int stage;
 enum inputs {
     blank0,
     blank1,
-    stream_button        // big green stream button
+    stream_button        // read big green stream button
 };
-const int input_pins[NUM_INPUT] = {32, 34, 11};
+const int input_pins[NUM_INPUT] = {32, 34, 14};
 
 #define NUM_OUTPUT 3
 enum ouptuts {
     blank2,
-    webcam_servo,
-    blank3
+    blank3,
+    blank4
 };
-const int output_pins[NUM_OUTPUT] = {53, 5, 51};
+const int output_pins[NUM_OUTPUT] = {51, 52, 53};
 
+// Analog and PWM
 #define NUM_ANALOG 3
 enum analogs {
     read_webcam_angle,
     read_pir,
     stream_button_light,  // output to control the stream button light
 };
-const int analog_pins[NUM_ANALOG] = {A1, A1, 7};
+const int analog_pins[NUM_ANALOG] = {A8, A9, 7};
 
 /*
     #if defined(__AVR_ATmega328P__)
@@ -65,7 +67,7 @@ const int analog_pins[NUM_ANALOG] = {A1, A1, 7};
 */
 
 /* firmware version */
-const static int firmware_version[3] = {0, 1, 5};
+const static int firmware_version[3] = {0, 1, 6};
 
 /* system status messaging to stream PC */
 #define STATUS_BITS 15
@@ -293,7 +295,7 @@ void read_btns(void) {
     Since there is no high-level library that I'm aware of for doing this, we use the low-level
     register-based interface for controlling this.
 
-    The webcam servo is on pin 2, which is controlled by timer 3.
+    The webcam servo is on pin SERVO_PIN (2), which is controlled by timer 3.
 
     Note: analogWrite will not work correctly on pins 2, 3, and 5 after we configure this!
 
@@ -301,9 +303,9 @@ void read_btns(void) {
 */
 void setup_webcam_servo_registers() {
     // Set pin 2 to output.
-    pinMode(2, OUTPUT);
+    pinMode(SERVO_PIN, OUTPUT);
     // TODO figure out how to get rid of this analogWrite function.
-    analogWrite(2, 127);
+    analogWrite(SERVO_PIN, 127);
     // I don't know what the top two bits in TCCR3B do, so not touching them.
     // Set prescaler to 010, meaning clk / 8, meaning 2 MHz.
     TCCR3B &= ~0x7;
@@ -329,7 +331,7 @@ void setup_webcam_servo_registers() {
 void set_webcam_servo_angle_pwm(int angle) {
     // angle should be between 0 and 180
     int pulse_width = map(angle, 0, 180, 2000, 4000);
-    Serial.println(pulse_width);
+    // Serial.println(pulse_width);
     OCR3B = pulse_width;
 }
 
@@ -431,7 +433,7 @@ void setup() {
         pin_latched[pin] = 0;       // initially, no pins are latched.
         pin_active[pin] = 1;        // This is hard coded where it may be needed per pin in the future.
         pin_state[pin] = 0;         // This is just an initial value, doesn't matter.
-        y_old[pin] = 0;
+        y_old[pin] = 1;
         flag[pin] = 0;
     }
 
