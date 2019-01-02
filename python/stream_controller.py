@@ -42,14 +42,22 @@ class board_status:
 
 
 async def main():
-#    ports = find_board(get_serial_ports())
-#     board = arduino(ports[0])
-    board = arduino("COM3")
-
-    board.release_latches()
+    ports = find_board(get_serial_ports())
+    board = arduino(ports[0])
 
     streaming = False
     player = False
+
+    startup = True
+    board.release_latches()
+
+    if startup:
+        board.off_air()
+        await obsws.require(SetCurrentSceneRequest({"scene-name": "NotLive"}))
+        await obsws.require(StopStreamingRequest())
+        streaming = False
+        state[board_status.stream_button] = 0
+        startup = False
 
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
@@ -70,16 +78,20 @@ async def main():
                     cmd, state = ret
                     # print("{}  :  {}".format(ret, streaming))
 
-                    if state[board_status.stream_button] == 1 and streaming == False:
+                    if state[board_status.stream_button] == 1 \
+                            and streaming is False:
                         board.on_air()
-                        await obsws.require(SetCurrentSceneRequest({"scene-name": "Live"}))
+                        await obsws.require(SetCurrentSceneRequest(
+                            {"scene-name": "Live"}))
                         await obsws.require(StartStreamingRequest())
                         streaming = True
                         state[board_status.stream_button] = 0
 
-                    elif state[board_status.stream_button] == 1 and streaming == True:
+                    elif state[board_status.stream_button] == 1 \
+                            and streaming is True:
                         board.off_air()
-                        await obsws.require(SetCurrentSceneRequest({"scene-name" : "NotLive"}))
+                        await obsws.require(SetCurrentSceneRequest(
+                            {"scene-name": "NotLive"}))
                         await obsws.require(StopStreamingRequest())
                         streaming = False
                         state[board_status.stream_button] = 0
@@ -96,6 +108,6 @@ try:
     asyncio.ensure_future(main())
     loop.run_forever()
 except KeyboardInterrupt:
-    dass
+    pass
 finally:
     loop.close()
