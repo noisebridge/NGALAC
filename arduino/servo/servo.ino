@@ -3,7 +3,7 @@
 
 #define SET_PIN 10
 #define GET_PIN A1
-#define MAX_ANGLE 130
+#define MAX_ANGLE 80
 #define MIN_ANGLE 50
 
 Servo webcam;
