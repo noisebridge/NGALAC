@@ -42,8 +42,9 @@ class board_status:
 
 
 async def main():
-    ports = find_board(get_serial_ports())
-    board = arduino(ports[0])
+#    ports = find_board(get_serial_ports())
+#     board = arduino(ports[0])
+    board = arduino("COM3")
 
     board.release_latches()
 
