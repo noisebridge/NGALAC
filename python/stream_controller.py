@@ -54,6 +54,12 @@ async def main():
     async with OBSWS('localhost', 4444, 'password') as obsws:
 
         if startup:
+            board.flush()
+            board.get_state()
+            ret = board.read()
+            if ret:
+                cmd, state = ret
+
             board.off_air()
             await obsws.require(SetCurrentSceneRequest(
                 {"scene-name": "NotLive"}))
