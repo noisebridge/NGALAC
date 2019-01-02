@@ -3,3 +3,22 @@ COMport permissions to run the probe script to find ports
 sudo picocom -b 9600 /dev/ttyUSB0
 - this will steal the serial output from the board, but that's ok for testing purposes.
 
+use debuggin env var or cmnline switch to activate debugging
+format output so more useful:
+player:
+PIR timer in m:ss
+streaming:
+which buttons mean what, etc
+
+lauch the window which subprocesses the server
+interprocess communication 
+  - receive board status + server status
+  - send comands to change state
+    - go on air
+    - go off air
+  - connect to exist server process or lauch one
+  - basic config to launch server on manager start up, windows start up, etc
+
+
+curses front end for the server manager.
+
