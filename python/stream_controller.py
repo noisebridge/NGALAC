@@ -51,15 +51,16 @@ async def main():
     startup = True
     board.release_latches()
 
-    if startup:
-        board.off_air()
-        await obsws.require(SetCurrentSceneRequest({"scene-name": "NotLive"}))
-        await obsws.require(StopStreamingRequest())
-        streaming = False
-        state[board_status.stream_button] = 0
-        startup = False
-
     async with OBSWS('localhost', 4444, 'password') as obsws:
+
+        if startup:
+            board.off_air()
+            await obsws.require(SetCurrentSceneRequest(
+                {"scene-name": "NotLive"}))
+            await obsws.require(StopStreamingRequest())
+            streaming = False
+            state[board_status.stream_button] = 0
+            startup = False
 
         obs_status = await obsws.require(GetStreamingStatusRequest())  #NOQA
         streaming = obs_status['streaming']
