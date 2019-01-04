@@ -24,9 +24,6 @@ CRGB case_leds[CASE_NUM];
 
 volatile static int stage;
 
-#define SERVO_MAX_ANGLE 110
-#define SERVO_MIN_ANGLE 10
-
 #define NUM_INPUT 3
 enum inputs {
     blank0,
@@ -283,95 +280,6 @@ void read_btns(void) {
 
 
 /*
-    Setup low-level registers for controlling webcam servo using PWM.
-
-    The servo expects a pulse every ~20ms with a width between 1 and 2 ms.
-
-    A pulse of width 1ms will adjust the servo to one extreme; 2ms will move it to the other extreme.
-
-    Because FastLED interferes with the normal Servo library, we use the PWM hardware to control
-    the servo.
-
-    Since there is no high-level library that I'm aware of for doing this, we use the low-level
-    register-based interface for controlling this.
-
-    The webcam servo is on pin SERVO_PIN (2), which is controlled by timer 3.
-
-    Note: analogWrite will not work correctly on pins 2, 3, and 5 after we configure this!
-
-    See README.md for more info.
-*/
-void setup_webcam_servo_registers() {
-    // Set pin 2 to output.
-    pinMode(SERVO_PIN, OUTPUT);
-    // TODO figure out how to get rid of this analogWrite function.
-    analogWrite(SERVO_PIN, 127);
-    // I don't know what the top two bits in TCCR3B do, so not touching them.
-    // Set prescaler to 010, meaning clk / 8, meaning 2 MHz.
-    TCCR3B &= ~0x7;
-    TCCR3B |= 0x2;
-    // Set WGM33:WGM30 to 0b1110, which means fast PWM, with the timer wrapping around when
-    // its value equals ICR3.
-    // Set WGM33 and WGM32 to 0b11
-    TCCR3B |= (1 << WGM33) | (1 << WGM32);
-    // Set WGM31 and WGM30 to 0b10
-    TCCR3A |= (1 << WGM31);
-    TCCR3A &= ~(1 << WGM30);
-    // Set wrap-around point at 40,000. At 2 MHz this means we wrap around every 20ms.
-    ICR3 = 40000;
-}
-
-/*
-    Adjust servo height using PWM.
-
-    A value of 2000 written to OCR3B will result in a 2000 / 40000 * 20ms = 1ms pulse.
-
-    A value of 4000 will result in a 4000 / 40000 * 20ms = 2ms pulse.
-*/
-void set_webcam_servo_angle_pwm(int angle) {
-    // angle should be between 0 and 180
-    int pulse_width = map(angle, 0, 180, 2000, 4000);
-    // Serial.println(pulse_width);
-    OCR3B = pulse_width;
-}
-
-int get_webcam_servo_angle_pwm() {
-    return map(OCR3B, 2000, 4000, 0, 180);
-}
-
-/*
-    Detach from webcam servo.
-*/
-void detach_webcam_servo() {
-    // TODO: should we do something here? It seems to work fine if we just no-op here.
-    // Matt mentioned that he thought detaching is necessary to avoid burning out the servo,
-    // but he's not sure that's true.
-}
-
-/*
-    Adjust servo height.  Input us an analog signal between ground and VCC+, constrained
-    by the values which make the camera visible.  Easiest adjustor is a slider/knob/rocker potentiometer,
-    hower may move to buttons (momentary: short adjustment, long press: continuous adjustment.
-*/
-void adjust_webcam_angle() {
-    static int running = 0;
-    int current_angle = get_webcam_servo_angle_pwm();
-    int knob = analogRead(analog_pins[read_webcam_angle]);
-    knob = map(knob, 0, 1024, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE);
-
-    if (abs(knob - current_angle) > 2) {
-        set_webcam_servo_angle_pwm(knob);
-        timers[servo_delay] = millis();
-        running = 1;
-    }
-
-    if (running == 1 && (millis() - timers[servo_delay] > 50)) {
-        detach_webcam_servo();
-        running = 0;
-    }
-}
-
-/*
     Input handling.  Anything the arduino received gets processed here.
 */
 void handle_input() {
@@ -404,10 +312,11 @@ void handle_input() {
     Process wait based execution here
 */
 void keep_time() {
-    adjust_webcam_angle();
 
-    if (analogRead(analog_pins[read_pir]) > 500) {
-        status[12] = 1; // indicate a player is at the machine
+    int pirData = analogRead(analog_pins[read_pir]);
+
+    if (pirData > 500) {
+        status[12] = pirData; // indicate a player is at the machine
         timers[player_activity] = millis();
     }
 
@@ -446,10 +355,8 @@ void setup() {
         digitalWrite(output_pins[pin], HIGH);
     }
 
-    timers[servo_delay] = millis();
     timers[player_activity] = millis();
 
-    setup_webcam_servo_registers();
 }
 
 void loop() {
