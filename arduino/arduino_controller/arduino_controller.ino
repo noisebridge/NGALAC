@@ -118,8 +118,8 @@ enum delays {
     stream_light
 };
 static unsigned long timers[NUM_DELAYS] = {0, 0, 0, 0};
-// const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
-const unsigned long waits[NUM_DELAYS]={50, 6000};  // 6s * 1000ms
+const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
+// const unsigned long waits[NUM_DELAYS]={50, 6000};  // 6s * 1000ms
 
 
 /*
@@ -317,7 +317,7 @@ void keep_time() {
 
     if (pirData > 400) {
         timers[player_activity] = millis();
-        status[12] = pirData;
+        status[12] = 1;
     }
 
     if ((millis() - timers[player_activity]) > waits[player_activity]) {
