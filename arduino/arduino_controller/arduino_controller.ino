@@ -118,8 +118,8 @@ enum delays {
     stream_light
 };
 static unsigned long timers[NUM_DELAYS] = {0, 0, 0, 0};
-const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
-//const unsigned long waits[NUM_DELAYS]={50, 15000};  // 15m * 60s * 1000ms
+// const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
+const unsigned long waits[NUM_DELAYS]={50, 6000};  // 6s * 1000ms
 
 
 /*
@@ -180,7 +180,7 @@ void send_state(void) {
 
 /* sends only value of pir input */
 void is_player(void) {
-    c.sendBinCmd(player, (int)pin_state[read_pir]);
+    c.sendBinCmd(player, (int)status[12]);
 }
 
 /* a 'pretty much a stub' for handling lights.  Once specs start rolling in, this will be fleshed out */
@@ -315,9 +315,9 @@ void keep_time() {
 
     int pirData = analogRead(analog_pins[read_pir]);
 
-    if (pirData > 500) {
-        status[12] = pirData; // indicate a player is at the machine
+    if (pirData > 400) {
         timers[player_activity] = millis();
+        status[12] = pirData;
     }
 
     if ((millis() - timers[player_activity]) > waits[player_activity]) {
