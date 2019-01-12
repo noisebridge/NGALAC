@@ -12,6 +12,9 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               )
 from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
+from aiologger import Logger
+
+logger = Logger.with_default_handlers()
 
 
 class board_status:
@@ -84,7 +87,8 @@ async def main():
                 if ret:
                     cmd, state = ret
                     # print("{}  :  {}".format(ret, streaming))
-
+                    logger.info(cmd)
+                    logger.info(state)
                     if state[board_status.stream_button] == 1 \
                             and streaming is False:
                         board.on_air()
@@ -110,7 +114,7 @@ async def main():
                         await obsws.require(StopStreamingRequest())
                         streaming = False
                         state[board_status.stream_button] = 0
-                    
+
                 board.release_latches()
 
             except ConnectionRefusedError:
