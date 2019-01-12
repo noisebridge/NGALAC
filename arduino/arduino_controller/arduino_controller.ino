@@ -118,8 +118,8 @@ enum delays {
     stream_light
 };
 static unsigned long timers[NUM_DELAYS] = {0, 0, 0, 0};
-const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
-// const unsigned long waits[NUM_DELAYS]={50, 6000};  // 6s * 1000ms
+//const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
+const unsigned long waits[NUM_DELAYS] = {50, 12000, 0, 0};  // 6s * 1000ms
 
 
 /*
@@ -217,6 +217,7 @@ void unlatch_pins() {
         pin_latched[pin] = 0;
         pin_latch_value[pin] = 0;
     }
+    status[12] = 0;
 }
 
 /* Attach callbacks for CmdMessenger commands */
@@ -235,6 +236,8 @@ void go_on_air() {
     stage = 0;
     status[13] = 1;
     status[14] = 1;  // trigger lights
+    timers[player_activity] = millis();
+    status[12] = 1;
 }
 
 void go_off_air() {

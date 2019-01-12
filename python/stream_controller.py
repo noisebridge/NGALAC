@@ -103,6 +103,14 @@ async def main():
                         streaming = False
                         state[board_status.stream_button] = 0
 
+                    elif state[board_status.player] == 0 and streaming is True:
+                        board.off_air()
+                        await obsws.require(SetCurrentSceneRequest(
+                            {"scene-name": "NotLive"}))
+                        await obsws.require(StopStreamingRequest())
+                        streaming = False
+                        state[board_status.stream_button] = 0
+                    
                 board.release_latches()
 
             except ConnectionRefusedError:
