@@ -118,8 +118,8 @@ enum delays {
     stream_light
 };
 static unsigned long timers[NUM_DELAYS] = {0, 0, 0, 0};
-//const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
-const unsigned long waits[NUM_DELAYS] = {50, 12000, 0, 0};  // 6s * 1000ms
+const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
+// const unsigned long waits[NUM_DELAYS] = {50, 12000, 0, 0};  // 6s * 1000ms
 
 
 /*
@@ -217,7 +217,7 @@ void unlatch_pins() {
         pin_latched[pin] = 0;
         pin_latch_value[pin] = 0;
     }
-    status[12] = 0;
+    status[12] = 1;
 }
 
 /* Attach callbacks for CmdMessenger commands */
@@ -345,7 +345,7 @@ void setup() {
         pin_latched[pin] = 0;       // initially, no pins are latched.
         pin_active[pin] = 1;        // This is hard coded where it may be needed per pin in the future.
         pin_state[pin] = 0;         // This is just an initial value, doesn't matter.
-        y_old[pin] = 1;
+        y_old[pin] = 0x00;
         flag[pin] = 0;
     }
 
@@ -359,7 +359,8 @@ void setup() {
     }
 
     timers[player_activity] = millis();
-
+    read_input();
+    handle_input();
 }
 
 void loop() {

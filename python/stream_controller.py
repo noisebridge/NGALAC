@@ -12,9 +12,9 @@ from obswsrc.requests import (GetStreamingStatusRequest,
                               )
 from obswsrc.types import Stream, StreamSettings
 from util import get_serial_ports, find_board
-from aiologger import Logger
+# from aiologger import Logger
 
-logger = Logger.with_default_handlers()
+# logger = Logger.with_default_handlers()
 
 
 class board_status:
@@ -50,7 +50,6 @@ async def main():
 
     streaming = False
     player = False
-
     startup = True
     board.release_latches()
 
@@ -87,8 +86,8 @@ async def main():
                 if ret:
                     cmd, state = ret
                     # print("{}  :  {}".format(ret, streaming))
-                    logger.info(cmd)
-                    logger.info(state)
+                    # logger.info(cmd)
+                    # logger.info(state)
                     if state[board_status.stream_button] == 1 \
                             and streaming is False:
                         board.on_air()
@@ -107,7 +106,8 @@ async def main():
                         streaming = False
                         state[board_status.stream_button] = 0
 
-                    elif state[board_status.player] == 0 and streaming is True:
+                    elif state[board_status.player_timeout] == 0 \
+                            and streaming is True:
                         board.off_air()
                         await obsws.require(SetCurrentSceneRequest(
                             {"scene-name": "NotLive"}))
