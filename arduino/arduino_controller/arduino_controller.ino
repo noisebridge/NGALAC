@@ -244,6 +244,7 @@ void go_off_air() {
     stage = 0;
     status[13] = 0;
     status[14] = 1;  // trigger lights
+    status[12] = 1;
 }
 
 /*
@@ -346,7 +347,7 @@ void setup() {
         pin_active[pin] = 1;        // This is hard coded where it may be needed per pin in the future.
         pin_state[pin] = 0;         // This is just an initial value, doesn't matter.
         y_old[pin] = 0x00;
-        flag[pin] = 0;
+        flag[pin] = 1;
     }
 
     for (pin = 0; pin < NUM_INPUT; pin++) {

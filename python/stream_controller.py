@@ -49,7 +49,6 @@ async def main():
     board = arduino(ports[0])
 
     streaming = False
-    player = False
     startup = True
     board.release_latches()
 
