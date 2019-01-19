@@ -359,7 +359,7 @@ void setup() {
     }
 
     timers[player_activity] = millis();
-    read_input();
+    read_btns();
     handle_input();
 }
 
