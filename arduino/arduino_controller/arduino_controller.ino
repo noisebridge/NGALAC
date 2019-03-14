@@ -118,8 +118,8 @@ enum delays {
     stream_light
 };
 static unsigned long timers[NUM_DELAYS] = {0, 0, 0, 0};
-const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
-// const unsigned long waits[NUM_DELAYS] = {50, 12000, 0, 0};  // 6s * 1000ms
+// const unsigned long waits[NUM_DELAYS] = {50, 900000, 0, 0}; // 15m * 60s * 1000ms
+const unsigned long waits[NUM_DELAYS] = {50, 60000, 0, 0};  // 6s * 1000ms
 
 
 /*
@@ -372,4 +372,3 @@ void loop() {
     keep_time();
     FastLED.show();
 }
-
