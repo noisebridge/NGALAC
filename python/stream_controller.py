@@ -116,7 +116,7 @@ async def main():
 
                 board.release_latches()
 
-            except ConnectionRefusedError:
+            except ValueError:
                 print("sleeping a bit, yawn")
                 time.sleep(2)
 
